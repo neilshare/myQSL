@@ -24,11 +24,11 @@ export async function runImport(file: File, api: ImportApi, options: ImportOptio
   const fileSha = await sha256(await file.text());
   const job = await api.createJob({ file_name: file.name, file_sha256: fileSha, total_records: records.length });
   const chunks = Array.from({ length: Math.ceil(records.length / chunkSize) }, (_, index) => records.slice(index * chunkSize, (index + 1) * chunkSize));
+  const payloads = await Promise.all(chunks.map(async (chunk, index) => ({ index, chunk, checksum: await sha256(JSON.stringify(chunk)) })));
   const uploaded: number[] = [];
   for (let start = 0; start < chunks.length; start += concurrency) {
-    await Promise.all(chunks.slice(start, start + concurrency).map(async (chunk, offset) => {
-      const index = start + offset;
-      await api.uploadChunk(job.id, { chunk_index: index, checksum: await sha256(JSON.stringify(chunk)), idempotency_key: `${job.id}-${index}`, records: chunk });
+    await Promise.all(payloads.slice(start, start + concurrency).map(async ({ index, chunk, checksum }) => {
+      await api.uploadChunk(job.id, { chunk_index: index, checksum, idempotency_key: `${job.id}-${index}`, records: chunk });
       uploaded.push(index);
     }));
   }
