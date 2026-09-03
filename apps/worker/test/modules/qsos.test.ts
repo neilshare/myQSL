@@ -35,9 +35,9 @@ describe("QSO management", () => {
   it("enforces If-Match and soft-delete/restore semantics", async () => {
     const created = await ownerJson("/api/v1/qsos", { method: "POST", body: JSON.stringify({ ...validQso, call: "BD1ZZZ", time_on: "1500" }) });
     const body = (await created.json()) as { data: { id: number; version: number } };
-    const stale = await ownerJson(`/api/v1/qsos/${body.data.id}`, { method: "PATCH", headers: { "If-Match": `W/\"qso-${body.data.id}-${body.data.version - 1}\"` }, body: JSON.stringify({ comment: "late write" }) });
+    const stale = await ownerJson(`/api/v1/qsos/${body.data.id}`, { method: "PATCH", headers: { "If-Match": `W/"qso-${body.data.id}-${body.data.version - 1}"` }, body: JSON.stringify({ comment: "late write" }) });
     expect(stale.status).toBe(412);
-    const deleted = await ownerJson(`/api/v1/qsos/${body.data.id}`, { method: "DELETE", headers: { "If-Match": `W/\"qso-${body.data.id}-${body.data.version}\"` } });
+    const deleted = await ownerJson(`/api/v1/qsos/${body.data.id}`, { method: "DELETE", headers: { "If-Match": `W/"qso-${body.data.id}-${body.data.version}"` } });
     expect(deleted.status).toBe(204);
     const visible = await ownerJson(`/api/v1/qsos/${body.data.id}`);
     expect(visible.status).toBe(404);

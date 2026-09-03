@@ -1,6 +1,5 @@
 import type { Hono } from "hono";
 import { z } from "zod";
-import { CardTemplateSchema } from "@eqsr/domain";
 import type { Env } from "../../env";
 import { MediaStore } from "../../platform/r2";
 import { problem } from "../../platform/problem";

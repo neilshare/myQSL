@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { Env } from "../../env";
 import { problem } from "../../platform/problem";
 import type { RequestVariables } from "../../platform/request-context";
-import { ImportConflictError, ImportService, ImportValidationError } from "./service";
+import { ImportConflictError, ImportService } from "./service";
 import { ImportRepository } from "./repository";
 
 const createSchema = z.object({ file_name: z.string().min(1).max(255), file_sha256: z.string().regex(/^[a-f0-9]{64}$/iu), total_records: z.number().int().nonnegative() });

@@ -1,4 +1,4 @@
-import type { AdifError, AdifParseResult, AdifRecord } from "./types";
+import type { AdifError, AdifParseResult } from "./types";
 
 function lineAt(source: string, offset: number): number {
   let line = 1;

@@ -1,4 +1,4 @@
-import { CardTemplateSchema, type NormalizedQso } from "@eqsr/domain";
+import { CardTemplateSchema } from "@eqsr/domain";
 import { nanoid } from "nanoid";
 import { MediaStore } from "../../platform/r2";
 import { QsoRepository } from "../qsos/repository";
@@ -21,6 +21,9 @@ export class CardService {
     const digest = await crypto.subtle.digest("SHA-256", bytes); const hash = [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
     if (expectedHash && expectedHash !== hash) throw new CardStateError("Content hash mismatch");
     const result = await this.media.putImmutable(`cards/${cardId}/canvas-v1/${hash}.png`, bytes, "image/png");
+    const current = await this.repository.get(cardId);
+    if (current?.status === "ready" && current.content_sha256 === hash) return current;
+    if (current?.status !== "draft") throw new CardStateError("Card is not in draft state");
     const row = await this.repository.attach(cardId, result.key, hash, this.now()); if (!row || row.status === "draft") throw new CardStateError("Card is not in draft state"); return row;
   }
   async publish(cardId: string): Promise<CardRow> { const row = await this.repository.publish(cardId, this.now()); if (!row || row.status !== "published") throw new CardStateError("Card must be ready before publishing"); return row; }

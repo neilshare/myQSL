@@ -13,7 +13,7 @@ const idSchema = z.coerce.number().int().positive();
 const listSchema = z.object({ call: z.string().trim().optional(), include_deleted: z.enum(["true", "false"]).optional(), cursor: z.string().optional(), limit: z.coerce.number().int().min(1).max(50).default(50) });
 
 function service(c: { env: Env }) { return new QsoService(new QsoRepository(c.env.DB), new StationRepository(c.env.DB)); }
-function etag(row: { id: number; version: number }) { return `W/\"qso-${row.id}-${row.version}\"`; }
+function etag(row: { id: number; version: number }) { return `W/"qso-${row.id}-${row.version}"`; }
 function validation(error: unknown, path: string) { return error instanceof z.ZodError ? problem(422, "https://eqsr.app/problems/validation", "Validation failed", error.message, path) : problem(500, "https://eqsr.app/problems/internal", "Internal error", "Unexpected QSO error", path); }
 
 export function registerQsoRoutes(app: Hono<{ Bindings: Env; Variables: RequestVariables }>): void {

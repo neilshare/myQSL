@@ -5,7 +5,7 @@ import { MediaStore } from "../../platform/r2";
 import { QsoRepository } from "../qsos/repository";
 import { TemplateRepository } from "../templates/repository";
 import { CardRepository } from "./repository";
-import { CardService, CardStateError } from "./service";
+import { CardService } from "./service";
 import { problem } from "../../platform/problem";
 
 function service(c: { env: Env }) { return new CardService(new CardRepository(c.env.DB), new QsoRepository(c.env.DB), new TemplateRepository(c.env.DB), new MediaStore(c.env.MEDIA)); }

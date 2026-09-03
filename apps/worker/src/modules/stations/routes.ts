@@ -46,7 +46,7 @@ export function registerStationRoutes(app: Hono<{ Bindings: Env; Variables: Requ
       const service = new StationService(new StationRepository(c.env.DB));
       const updated = await service.update(id.data, version, stationInput.parse(await c.req.json()));
       if (!updated) return problem(412, "https://eqsr.app/problems/stale", "Stale version", "The station changed since it was read", c.req.path);
-      c.header("ETag", `W/\"station-${updated.id}-${updated.version}\"`);
+      c.header("ETag", `W/"station-${updated.id}-${updated.version}"`);
       return c.json({ data: updated });
     } catch (error) {
       return jsonError(error, c.req.path);

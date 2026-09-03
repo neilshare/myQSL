@@ -1,5 +1,4 @@
 import { nanoid } from "nanoid";
-import { MediaStore } from "../../platform/r2";
 import { BackupRepository, type BackupRunRow } from "./repository";
 
 export interface BackupConfig { accountId: string; databaseId: string; token: string; }
@@ -19,7 +18,7 @@ export class BackupService {
       const started = await this.fetcher(endpoint, { method: "POST", headers, body: JSON.stringify({ output_format: "sql" }) });
       if (!started.ok) return this.repository.fail(run.id, started.status === 429 ? "EXPORT_RATE_LIMITED" : "EXPORT_UNAVAILABLE", this.now());
       const job = await started.json() as { result?: { at_bookmark?: string; signed_url?: string; status?: string } };
-      const ready = job.result?.signed_url ? job.result : await this.poll(endpoint, headers, job.result?.at_bookmark);
+      const ready = job.result?.signed_url ? job.result : await this.poll(endpoint, headers);
       if (!ready?.signed_url) return this.repository.fail(run.id, "EXPORT_TIMEOUT", this.now());
       const download = await this.fetcher(ready.signed_url);
       if (!download.ok || !download.body) return this.repository.fail(run.id, "DOWNLOAD_FAILED", this.now());
@@ -30,7 +29,7 @@ export class BackupService {
     } catch { return this.repository.fail(run.id, "EXPORT_UNAVAILABLE", this.now()); }
   }
 
-  private async poll(endpoint: string, headers: HeadersInit, bookmark?: string) {
+  private async poll(endpoint: string, headers: HeadersInit) {
     for (let attempt = 0; attempt < 5; attempt += 1) {
       const response = await this.fetcher(endpoint, { headers });
       if (!response.ok) continue;

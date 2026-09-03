@@ -1,10 +1,11 @@
 import { WorkflowEntrypoint } from "cloudflare:workers";
 import type { WorkflowEvent, WorkflowStep } from "cloudflare:workers";
 import type { Env } from "../../env";
+import type { BackupParams as EnvBackupParams } from "../../env";
 import { BackupRepository } from "./repository";
 import { BackupService } from "./service";
 
-export type BackupParams = { requested_at?: string };
+export type BackupParams = EnvBackupParams;
 export class D1BackupWorkflow extends WorkflowEntrypoint<Env, BackupParams> {
   async run(event: WorkflowEvent<BackupParams>, step: WorkflowStep) {
     const requestedAt = event.schedule ? new Date(event.schedule.scheduledTime).toISOString() : event.payload?.requested_at ?? event.timestamp.toISOString();

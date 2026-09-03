@@ -3,7 +3,6 @@ import type { Env } from "./env";
 import { requireOwner } from "./platform/access";
 import { requestContext } from "./platform/request-context";
 import { requireSameOrigin } from "./platform/origin";
-import { enforcePublicLimit } from "./platform/rate-limit";
 import { problem, Problems } from "./platform/problem";
 import { registerStationRoutes } from "./modules/stations/routes";
 import { registerQsoRoutes } from "./modules/qsos/routes";
@@ -13,10 +12,12 @@ import { registerCardRoutes } from "./modules/cards/routes";
 import { registerPublicRoutes } from "./modules/public/routes";
 import { D1BackupWorkflow } from "./modules/backup/workflow";
 import { registerBackupRoutes } from "./modules/backup/routes";
+import { securityHeaders } from "./platform/security-headers";
 
 const app = new Hono<{ Bindings: Env; Variables: { requestId: string; actor: string } }>();
 
 app.use("*", requestContext);
+app.use("*", securityHeaders);
 
 app.get("/healthz", (c) => c.json({ status: "ok" }, 200, { "Cache-Control": "no-store" }));
 
