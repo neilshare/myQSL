@@ -18,6 +18,11 @@ export const requireOwner: MiddlewareHandler<{
         await next();
         return;
       }
+      if (c.req.header("Authorization") === "Bearer local-e2e-owner") {
+        c.set("actor", "e2e-owner");
+        await next();
+        return;
+      }
     }
     return problem(
       401,

@@ -1,0 +1,9 @@
+{
+  "name": "eQSR — Electronic QSO & QSL Record",
+  "short_name": "eQSR",
+  "start_url": "/admin/qsos",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": []
+}

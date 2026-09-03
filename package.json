@@ -11,6 +11,8 @@
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "check:bundle": "tsx scripts/check-bundle.mts",
+    "check:placeholders": "tsx scripts/check-placeholders.mts",
     "dev": "pnpm build && wrangler dev",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
     "db:migrate:prod": "wrangler d1 migrations apply DB --remote",
