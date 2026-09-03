@@ -1,8 +1,5 @@
-export function App() {
-  return (
-    <main>
-      <h1>eQSR</h1>
-      <p>Electronic QSO &amp; QSL Record</p>
-    </main>
-  );
-}
+import { RouterProvider } from "react-router";
+import { router } from "./router";
+import "./styles.css";
+
+export function App() { return <RouterProvider router={router} />; }
