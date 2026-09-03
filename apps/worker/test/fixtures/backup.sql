@@ -1,0 +1,12 @@
+PRAGMA foreign_keys = ON;
+CREATE TABLE stations (id INTEGER PRIMARY KEY, callsign TEXT NOT NULL, is_default INTEGER NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
+CREATE TABLE qsos (id INTEGER PRIMARY KEY, station_id INTEGER NOT NULL, station_callsign TEXT NOT NULL, call TEXT NOT NULL, qso_date TEXT NOT NULL, time_on TEXT NOT NULL, qso_at INTEGER NOT NULL, band TEXT NOT NULL, mode TEXT NOT NULL, adif_extra_json TEXT NOT NULL, dedupe_key TEXT NOT NULL, duplicate_ordinal INTEGER NOT NULL, source TEXT NOT NULL, version INTEGER NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
+CREATE TABLE import_jobs (id TEXT PRIMARY KEY, file_name TEXT NOT NULL, file_sha256 TEXT NOT NULL, total_records INTEGER NOT NULL, accepted_count INTEGER NOT NULL, warning_count INTEGER NOT NULL, duplicate_count INTEGER NOT NULL, rejected_count INTEGER NOT NULL, status TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
+CREATE TABLE import_chunks (id INTEGER PRIMARY KEY, job_id TEXT NOT NULL, chunk_index INTEGER NOT NULL, idempotency_key TEXT NOT NULL, checksum TEXT NOT NULL, result_json TEXT NOT NULL, created_at INTEGER NOT NULL);
+CREATE TABLE card_templates (id INTEGER PRIMARY KEY, name TEXT NOT NULL, schema_version INTEGER NOT NULL, base_width INTEGER NOT NULL, base_height INTEGER NOT NULL, layout_json TEXT NOT NULL, version INTEGER NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
+CREATE TABLE qsl_cards (id TEXT PRIMARY KEY, qso_id INTEGER NOT NULL, template_id INTEGER NOT NULL, public_id TEXT NOT NULL, status TEXT NOT NULL, qso_snapshot_json TEXT NOT NULL, template_snapshot_json TEXT NOT NULL, render_version TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
+CREATE TABLE audit_events (id INTEGER PRIMARY KEY, actor TEXT NOT NULL, action TEXT NOT NULL, entity TEXT NOT NULL, request_id TEXT NOT NULL, detail_json TEXT NOT NULL, created_at INTEGER NOT NULL);
+CREATE TABLE backup_runs (id TEXT PRIMARY KEY, workflow_instance_id TEXT NOT NULL, status TEXT NOT NULL, started_at INTEGER NOT NULL);
+CREATE TABLE app_settings (key TEXT PRIMARY KEY, value_json TEXT NOT NULL, updated_at INTEGER NOT NULL);
+INSERT INTO stations VALUES (1, 'BA4RC', 1, 1700000000000, 1700000000000);
+INSERT INTO qsos VALUES (1, 1, 'BA4RC', 'BG4YYY', '20260903', '143000', 1756909800000, '40M', 'SSB', '{}', 'backup-fixture', 0, 'manual', 1, 1700000000000, 1700000000000);

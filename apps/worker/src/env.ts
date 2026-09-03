@@ -10,4 +10,5 @@ export interface Env {
   D1_REST_API_TOKEN?: string;
   CLOUDFLARE_ACCOUNT_ID?: string;
   D1_DATABASE_ID?: string;
+  D1_BACKUP_WORKFLOW: Workflow<import("./modules/backup/workflow").BackupParams>;
 }

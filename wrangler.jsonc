@@ -32,4 +32,12 @@
     "ACCESS_AUD": "local-development-audience"
   },
   "observability": { "enabled": true }
+  ,"workflows": [
+    {
+      "name": "eqsr-d1-backup",
+      "binding": "D1_BACKUP_WORKFLOW",
+      "class_name": "D1BackupWorkflow",
+      "schedules": ["0 20 * * *"]
+    }
+  ]
 }

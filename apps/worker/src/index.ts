@@ -11,6 +11,8 @@ import { registerImportRoutes } from "./modules/imports/routes";
 import { registerTemplateRoutes } from "./modules/templates/routes";
 import { registerCardRoutes } from "./modules/cards/routes";
 import { registerPublicRoutes } from "./modules/public/routes";
+import { D1BackupWorkflow } from "./modules/backup/workflow";
+import { registerBackupRoutes } from "./modules/backup/routes";
 
 const app = new Hono<{ Bindings: Env; Variables: { requestId: string; actor: string } }>();
 
@@ -35,6 +37,9 @@ registerTemplateRoutes(app);
 app.use("/api/v1/cards", requireSameOrigin);
 app.use("/api/v1/cards", requireOwner);
 registerCardRoutes(app);
+app.use("/api/v1/backups", requireSameOrigin);
+app.use("/api/v1/backups", requireOwner);
+registerBackupRoutes(app);
 app.all("/api/v1/*", (c) =>
   problem(404, Problems.notFound, "Not found", "API route not found", c.req.path)
 );
@@ -42,3 +47,4 @@ app.all("/api/v1/*", (c) =>
 app.all("*", (c) => c.env.ASSETS.fetch(c.req.raw));
 
 export default { fetch: app.fetch } satisfies ExportedHandler<Env>;
+export { D1BackupWorkflow };

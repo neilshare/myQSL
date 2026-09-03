@@ -1,0 +1,9 @@
+export interface BackupRunRow { id: string; workflow_instance_id: string; export_bookmark: string | null; object_key: string | null; r2_etag: string | null; content_sha256: string | null; size_bytes: number | null; status: "running" | "completed" | "failed"; error_code: string | null; started_at: number; finished_at: number | null; verified_at: number | null; }
+export class BackupRepository {
+  constructor(private readonly db: D1Database) {}
+  async create(input: { id: string; instanceId: string; startedAt: number }): Promise<BackupRunRow> { await this.db.prepare("INSERT INTO backup_runs (id, workflow_instance_id, status, started_at) VALUES (?, ?, 'running', ?)").bind(input.id, input.instanceId, input.startedAt).run(); return this.get(input.id) as Promise<BackupRunRow>; }
+  get(id: string): Promise<BackupRunRow | null> { return this.db.prepare("SELECT * FROM backup_runs WHERE id = ?").bind(id).first<BackupRunRow>(); }
+  running(): Promise<BackupRunRow | null> { return this.db.prepare("SELECT * FROM backup_runs WHERE status = 'running' ORDER BY started_at DESC LIMIT 1").first<BackupRunRow>(); }
+  async complete(id: string, input: { bookmark: string; key: string; etag: string; size: number; finishedAt: number }): Promise<BackupRunRow> { await this.db.prepare("UPDATE backup_runs SET status = 'completed', export_bookmark = ?, object_key = ?, r2_etag = ?, size_bytes = ?, finished_at = ? WHERE id = ?").bind(input.bookmark, input.key, input.etag, input.size, input.finishedAt, id).run(); return this.get(id) as Promise<BackupRunRow>; }
+  async fail(id: string, code: string, finishedAt: number): Promise<BackupRunRow> { await this.db.prepare("UPDATE backup_runs SET status = 'failed', error_code = ?, finished_at = ? WHERE id = ?").bind(code.slice(0, 80), finishedAt, id).run(); return this.get(id) as Promise<BackupRunRow>; }
+}
