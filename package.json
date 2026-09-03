@@ -1,0 +1,34 @@
+{
+  "name": "eqsr",
+  "private": true,
+  "packageManager": "pnpm@10.15.0",
+  "engines": { "node": ">=24 <25" },
+  "scripts": {
+    "build": "pnpm --filter @eqsr/web build",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "ci": "pnpm check",
+    "lint": "eslint . && depcruise apps packages --config dependency-cruiser.cjs",
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "dev": "pnpm build && wrangler dev",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "db:migrate:prod": "wrangler d1 migrations apply DB --remote",
+    "deploy:prod": "wrangler deploy"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "1.1.3",
+    "@cloudflare/workers-types": "5.20260903.1",
+    "@eslint/js": "9.35.0",
+    "@playwright/test": "1.55.0",
+    "@types/node": "24.13.3",
+    "dependency-cruiser": "17.1.0",
+    "eslint": "9.35.0",
+    "globals": "17.7.0",
+    "tsx": "4.20.5",
+    "typescript": "5.9.2",
+    "typescript-eslint": "8.42.0",
+    "vitest": "4.1.0",
+    "wrangler": "4.128.0"
+  }
+}
