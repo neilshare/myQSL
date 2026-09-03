@@ -9,19 +9,14 @@ import { registerStationRoutes } from "./modules/stations/routes";
 import { registerQsoRoutes } from "./modules/qsos/routes";
 import { registerImportRoutes } from "./modules/imports/routes";
 import { registerTemplateRoutes } from "./modules/templates/routes";
+import { registerCardRoutes } from "./modules/cards/routes";
+import { registerPublicRoutes } from "./modules/public/routes";
 
 const app = new Hono<{ Bindings: Env; Variables: { requestId: string; actor: string } }>();
 
 app.use("*", requestContext);
 
 app.get("/healthz", (c) => c.json({ status: "ok" }, 200, { "Cache-Control": "no-store" }));
-
-app.get("/api/v1/public/lookup", enforcePublicLimit, (c) =>
-  problem(404, Problems.notFound, "Not found", "No public lookup has been created yet", c.req.path)
-);
-app.get("/api/v1/public/cards/:publicId", (c) =>
-  problem(404, Problems.notFound, "Not found", "Card not found", c.req.path)
-);
 
 app.use("/api/v1/qsos", requireSameOrigin);
 app.use("/api/v1/qsos", requireOwner);
@@ -31,11 +26,15 @@ app.use("/api/v1/imports", requireSameOrigin);
 app.use("/api/v1/imports", requireOwner);
 app.use("/api/v1/templates", requireSameOrigin);
 app.use("/api/v1/templates", requireOwner);
+registerPublicRoutes(app);
 app.use("/api/v1/*", requireOwner);
 registerStationRoutes(app);
 registerQsoRoutes(app);
 registerImportRoutes(app);
 registerTemplateRoutes(app);
+app.use("/api/v1/cards", requireSameOrigin);
+app.use("/api/v1/cards", requireOwner);
+registerCardRoutes(app);
 app.all("/api/v1/*", (c) =>
   problem(404, Problems.notFound, "Not found", "API route not found", c.req.path)
 );
