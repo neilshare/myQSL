@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Minimal blue",
+    "schema_version": 1,
+    "base_width": 1264,
+    "base_height": 848,
+    "elements": [
+      { "type": "text", "x": 0.08, "y": 0.12, "field": "station_callsign", "font": "Inter", "font_size": 44, "color": "#FFFFFF", "align": "left" },
+      { "type": "text", "x": 0.08, "y": 0.22, "field": "call", "font": "Inter", "font_size": 52, "color": "#FFFFFF", "align": "left" },
+      { "type": "text", "x": 0.08, "y": 0.30, "field": "qso_date", "font": "Inter", "font_size": 24, "color": "#DDE7FF", "align": "left" },
+      { "type": "qr", "x": 0.80, "y": 0.72, "width": 0.14, "height": 0.14, "value": "public_url" }
+    ]
+  }
+]

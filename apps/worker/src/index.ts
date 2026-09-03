@@ -8,6 +8,7 @@ import { problem, Problems } from "./platform/problem";
 import { registerStationRoutes } from "./modules/stations/routes";
 import { registerQsoRoutes } from "./modules/qsos/routes";
 import { registerImportRoutes } from "./modules/imports/routes";
+import { registerTemplateRoutes } from "./modules/templates/routes";
 
 const app = new Hono<{ Bindings: Env; Variables: { requestId: string; actor: string } }>();
 
@@ -28,10 +29,13 @@ app.use("/api/v1/stations", requireSameOrigin);
 app.use("/api/v1/stations", requireOwner);
 app.use("/api/v1/imports", requireSameOrigin);
 app.use("/api/v1/imports", requireOwner);
+app.use("/api/v1/templates", requireSameOrigin);
+app.use("/api/v1/templates", requireOwner);
 app.use("/api/v1/*", requireOwner);
 registerStationRoutes(app);
 registerQsoRoutes(app);
 registerImportRoutes(app);
+registerTemplateRoutes(app);
 app.all("/api/v1/*", (c) =>
   problem(404, Problems.notFound, "Not found", "API route not found", c.req.path)
 );
