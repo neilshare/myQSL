@@ -5,6 +5,8 @@ import { requestContext } from "./platform/request-context";
 import { requireSameOrigin } from "./platform/origin";
 import { enforcePublicLimit } from "./platform/rate-limit";
 import { problem, Problems } from "./platform/problem";
+import { registerStationRoutes } from "./modules/stations/routes";
+import { registerQsoRoutes } from "./modules/qsos/routes";
 
 const app = new Hono<{ Bindings: Env; Variables: { requestId: string; actor: string } }>();
 
@@ -21,9 +23,11 @@ app.get("/api/v1/public/cards/:publicId", (c) =>
 
 app.use("/api/v1/qsos", requireSameOrigin);
 app.use("/api/v1/qsos", requireOwner);
+app.use("/api/v1/stations", requireSameOrigin);
+app.use("/api/v1/stations", requireOwner);
 app.use("/api/v1/*", requireOwner);
-app.get("/api/v1/qsos", (c) => c.json({ data: [], next_cursor: null }));
-app.post("/api/v1/qsos", (c) => c.json({ data: null }, 201));
+registerStationRoutes(app);
+registerQsoRoutes(app);
 app.all("/api/v1/*", (c) =>
   problem(404, Problems.notFound, "Not found", "API route not found", c.req.path)
 );
