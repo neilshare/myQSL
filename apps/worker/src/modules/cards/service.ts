@@ -14,7 +14,17 @@ export class CardService {
     const layout = CardTemplateSchema.parse(JSON.parse(template.layout_json));
     const qsoSnapshot = { call: qso.call, station_callsign: qso.station_callsign, qso_date: qso.qso_date, time_on: qso.time_on, band: qso.band, freq_hz: qso.freq_hz, mode: qso.mode, rst_sent: qso.rst_sent, rst_rcvd: qso.rst_rcvd, my_grid: qso.my_grid };
     const templateSnapshot = { schema_version: 1, version: template.version, base_width: template.base_width, base_height: template.base_height, layout, background_r2_key: template.background_r2_key, background_sha256: template.background_sha256 };
-    const row = await this.repository.create({ id: nanoid(16), qsoId, templateId, publicId: nanoid(22), qsoSnapshot: JSON.stringify(qsoSnapshot), templateSnapshot: JSON.stringify(templateSnapshot), now: this.now() });
+    const row = await this.repository.create({
+      id: nanoid(16),
+      qsoId,
+      templateId,
+      publicId: nanoid(22),
+      qsoSnapshot: JSON.stringify(qsoSnapshot),
+      templateSnapshot: JSON.stringify(templateSnapshot),
+      lookupCall: qso.call.toUpperCase(),
+      lookupQsoDate: qso.qso_date,
+      now: this.now()
+    });
     return { ...row, public_url: publicCardPath(row.public_id) };
   }
   async attachImage(cardId: string, bytes: ArrayBuffer, expectedHash?: string): Promise<CardRow> {
