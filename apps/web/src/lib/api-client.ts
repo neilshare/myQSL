@@ -17,7 +17,14 @@ export const api = {
   qsos: {
     list: (query = "") => apiFetch<{ data: unknown[]; next_cursor: string | null }>(`/api/v1/qsos${query}`),
     patch: (id: number, patch: Record<string, unknown>, etag: string) => apiFetch(`/api/v1/qsos/${id}`, { method: "PATCH", headers: { "If-Match": etag }, body: JSON.stringify(patch) }),
-    create: (input: Record<string, unknown>) => apiFetch(`/api/v1/qsos`, { method: "POST", body: JSON.stringify(input) })
+    create: (input: Record<string, unknown>) => apiFetch(`/api/v1/qsos`, { method: "POST", body: JSON.stringify(input) }),
+    delete: (id: number, etag: string) => apiFetch(`/api/v1/qsos/${id}`, { method: "DELETE", headers: { "If-Match": etag } }),
+    restore: (id: number) => apiFetch<{ data: unknown }>(`/api/v1/qsos/${id}/restore`, { method: "POST" })
+  },
+  stations: {
+    list: () => apiFetch<{ data: Array<Record<string, unknown>> }>("/api/v1/stations"),
+    create: (input: Record<string, unknown>) => apiFetch("/api/v1/stations", { method: "POST", body: JSON.stringify(input) }),
+    patch: (id: number, patch: Record<string, unknown>, etag: string) => apiFetch(`/api/v1/stations/${id}`, { method: "PATCH", headers: { "If-Match": etag }, body: JSON.stringify(patch) })
   },
   imports: {
     createJob: (input: Record<string, unknown>) => apiFetch<{ id: string }>("/api/v1/imports", { method: "POST", body: JSON.stringify(input) }).then((result) => result.data),

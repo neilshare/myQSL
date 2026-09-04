@@ -44,4 +44,33 @@ describe("QSO management", () => {
     const restored = await ownerJson(`/api/v1/qsos/${body.data.id}/restore`, { method: "POST" });
     expect(restored.status).toBe(200);
   });
+
+  it("supports band, mode, date_from, date_to filters and rejects limit > 200 with 422", async () => {
+    // 1. Rejects limit > 200
+    const overLimit = await ownerJson("/api/v1/qsos?limit=201");
+    expect(overLimit.status).toBe(422);
+
+    // 2. Insert records on different bands and dates
+    await ownerJson("/api/v1/qsos", {
+      method: "POST",
+      body: JSON.stringify({ ...validQso, call: "BA1AAA", band: "15M", mode: "CW", qso_date: "20260901" })
+    });
+    await ownerJson("/api/v1/qsos", {
+      method: "POST",
+      body: JSON.stringify({ ...validQso, call: "BA2BBB", band: "40M", mode: "SSB", qso_date: "20260902" })
+    });
+
+    // Filter by band=15M
+    const bandRes = await ownerJson("/api/v1/qsos?band=15M");
+    expect(bandRes.status).toBe(200);
+    const bandData = ((await bandRes.json()) as { data: Array<{ call: string; band: string }> }).data;
+    expect(bandData.every((r) => r.band === "15M")).toBe(true);
+    expect(bandData.some((r) => r.call === "BA1AAA")).toBe(true);
+
+    // Filter by date range
+    const dateRes = await ownerJson("/api/v1/qsos?date_from=20260901&date_to=20260901");
+    expect(dateRes.status).toBe(200);
+    const dateData = ((await dateRes.json()) as { data: Array<{ call: string; qso_date: string }> }).data;
+    expect(dateData.every((r) => r.qso_date === "20260901")).toBe(true);
+  });
 });

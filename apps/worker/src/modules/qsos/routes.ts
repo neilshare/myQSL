@@ -10,7 +10,16 @@ import { DuplicateQsoError, QsoNotFoundError, QsoService } from "./service";
 import { toQsoResponse } from "./mapper";
 
 const idSchema = z.coerce.number().int().positive();
-const listSchema = z.object({ call: z.string().trim().optional(), include_deleted: z.enum(["true", "false"]).optional(), cursor: z.string().optional(), limit: z.coerce.number().int().min(1).max(50).default(50) });
+const listSchema = z.object({
+  call: z.string().trim().optional(),
+  band: z.string().trim().optional(),
+  mode: z.string().trim().optional(),
+  date_from: z.string().trim().optional(),
+  date_to: z.string().trim().optional(),
+  include_deleted: z.enum(["true", "false"]).optional(),
+  cursor: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(50)
+});
 
 function service(c: { env: Env }) { return new QsoService(new QsoRepository(c.env.DB), new StationRepository(c.env.DB)); }
 function etag(row: { id: number; version: number }) { return `W/"qso-${row.id}-${row.version}"`; }
@@ -30,9 +39,27 @@ export function registerQsoRoutes(app: Hono<{ Bindings: Env; Variables: RequestV
   });
   app.get("/api/v1/qsos", async (c) => {
     try {
-      const query = listSchema.parse({ call: c.req.query("call"), include_deleted: c.req.query("include_deleted"), cursor: c.req.query("cursor"), limit: c.req.query("limit") });
+      const query = listSchema.parse({
+        call: c.req.query("call"),
+        band: c.req.query("band"),
+        mode: c.req.query("mode"),
+        date_from: c.req.query("date_from"),
+        date_to: c.req.query("date_to"),
+        include_deleted: c.req.query("include_deleted"),
+        cursor: c.req.query("cursor"),
+        limit: c.req.query("limit")
+      });
       const cursor = query.cursor ? decodeCursor(query.cursor) : undefined;
-      const rows = await service(c).list({ call: query.call?.toUpperCase(), includeDeleted: query.include_deleted === "true", cursor, limit: query.limit });
+      const rows = await service(c).list({
+        call: query.call?.toUpperCase(),
+        band: query.band?.toUpperCase(),
+        mode: query.mode?.toUpperCase(),
+        date_from: query.date_from,
+        date_to: query.date_to,
+        includeDeleted: query.include_deleted === "true",
+        cursor,
+        limit: query.limit
+      });
       const next_cursor = rows.length === query.limit ? encodeCursor({ qso_at: rows[rows.length - 1].qso_at, id: rows[rows.length - 1].id }) : null;
       return c.json({ data: rows.map(toQsoResponse), next_cursor });
     } catch (error) { return validation(error, c.req.path); }

@@ -29,7 +29,18 @@ export class QsoService {
     return { qso: await this.repository.insert(insert), duplicate: Boolean(duplicate) };
   }
 
-  list(filter: { call?: string; includeDeleted?: boolean; cursor?: { qso_at: number; id: number }; limit: number }) { return this.repository.list(filter); }
+  list(filter: {
+    call?: string;
+    band?: string;
+    mode?: string;
+    date_from?: string;
+    date_to?: string;
+    includeDeleted?: boolean;
+    cursor?: { qso_at: number; id: number };
+    limit: number;
+  }) {
+    return this.repository.list(filter);
+  }
   get(id: number, includeDeleted = false) { return this.repository.findById(id, includeDeleted); }
   async update(id: number, version: number, patch: Record<string, unknown>): Promise<QsoRow> { const row = await this.repository.updateIfVersion(id, version, patch, this.now()); if (!row) throw new QsoNotFoundError(); return row; }
   async trash(id: number, version: number): Promise<void> { if (!(await this.repository.trash(id, version, this.now()))) throw new QsoNotFoundError(); }

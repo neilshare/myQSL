@@ -90,12 +90,46 @@ export class QsoRepository {
     return row ? mapRow(row) : null;
   }
 
-  async list(query: { call?: string; includeDeleted?: boolean; cursor?: { qso_at: number; id: number }; limit: number }): Promise<QsoRow[]> {
+  async list(query: {
+    call?: string;
+    band?: string;
+    mode?: string;
+    date_from?: string;
+    date_to?: string;
+    includeDeleted?: boolean;
+    cursor?: { qso_at: number; id: number };
+    limit: number;
+  }): Promise<QsoRow[]> {
     const clauses = [query.includeDeleted ? "1=1" : "deleted_at IS NULL"];
     const params: Array<string | number> = [];
-    if (query.call) { clauses.push("call = ?"); params.push(query.call); }
-    if (query.cursor) { clauses.push("(qso_at < ? OR (qso_at = ? AND id < ?))"); params.push(query.cursor.qso_at, query.cursor.qso_at, query.cursor.id); }
-    const result = await this.db.prepare(`SELECT * FROM qsos WHERE ${clauses.join(" AND ")} ORDER BY qso_at DESC, id DESC LIMIT ?`).bind(...params, query.limit).all<Record<string, unknown>>();
+    if (query.call) {
+      clauses.push("call = ?");
+      params.push(query.call);
+    }
+    if (query.band) {
+      clauses.push("band = ?");
+      params.push(query.band);
+    }
+    if (query.mode) {
+      clauses.push("mode = ?");
+      params.push(query.mode);
+    }
+    if (query.date_from) {
+      clauses.push("qso_date >= ?");
+      params.push(query.date_from);
+    }
+    if (query.date_to) {
+      clauses.push("qso_date <= ?");
+      params.push(query.date_to);
+    }
+    if (query.cursor) {
+      clauses.push("(qso_at < ? OR (qso_at = ? AND id < ?))");
+      params.push(query.cursor.qso_at, query.cursor.qso_at, query.cursor.id);
+    }
+    const result = await this.db
+      .prepare(`SELECT * FROM qsos WHERE ${clauses.join(" AND ")} ORDER BY qso_at DESC, id DESC LIMIT ?`)
+      .bind(...params, query.limit)
+      .all<Record<string, unknown>>();
     return result.results.map(mapRow);
   }
 
