@@ -27,10 +27,15 @@ app.use("/api/v1/stations", requireSameOrigin);
 app.use("/api/v1/stations", requireOwner);
 app.use("/api/v1/imports", requireSameOrigin);
 app.use("/api/v1/imports", requireOwner);
-app.use("/api/v1/templates", requireSameOrigin);
-app.use("/api/v1/templates", requireOwner);
+app.use("/api/v1/card-templates", requireSameOrigin);
+app.use("/api/v1/card-templates", requireOwner);
 registerPublicRoutes(app);
-app.use("/api/v1/*", requireOwner);
+app.use("/api/v1/*", async (c, next) => {
+  if (c.req.path.startsWith("/api/v1/public/")) {
+    return next();
+  }
+  return requireOwner(c, next);
+});
 registerStationRoutes(app);
 registerQsoRoutes(app);
 registerImportRoutes(app);

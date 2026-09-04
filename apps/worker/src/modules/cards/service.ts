@@ -1,4 +1,4 @@
-import { CardTemplateSchema } from "@eqsr/domain";
+import { CardTemplateSchema, publicCardPath } from "@eqsr/domain";
 import { nanoid } from "nanoid";
 import { MediaStore } from "../../platform/r2";
 import { QsoRepository } from "../qsos/repository";
@@ -15,7 +15,7 @@ export class CardService {
     const qsoSnapshot = { call: qso.call, station_callsign: qso.station_callsign, qso_date: qso.qso_date, time_on: qso.time_on, band: qso.band, freq_hz: qso.freq_hz, mode: qso.mode, rst_sent: qso.rst_sent, rst_rcvd: qso.rst_rcvd, my_grid: qso.my_grid };
     const templateSnapshot = { schema_version: 1, version: template.version, base_width: template.base_width, base_height: template.base_height, layout, background_r2_key: template.background_r2_key, background_sha256: template.background_sha256 };
     const row = await this.repository.create({ id: nanoid(16), qsoId, templateId, publicId: nanoid(22), qsoSnapshot: JSON.stringify(qsoSnapshot), templateSnapshot: JSON.stringify(templateSnapshot), now: this.now() });
-    return { ...row, public_url: `/cards/${row.public_id}` };
+    return { ...row, public_url: publicCardPath(row.public_id) };
   }
   async attachImage(cardId: string, bytes: ArrayBuffer, expectedHash?: string): Promise<CardRow> {
     const digest = await crypto.subtle.digest("SHA-256", bytes); const hash = [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");

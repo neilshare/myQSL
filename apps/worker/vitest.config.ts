@@ -8,6 +8,7 @@ export default defineProject({
     cloudflareTest(async () => ({
       wrangler: { configPath: path.join(import.meta.dirname, "../../wrangler.jsonc") },
       miniflare: {
+        compatibilityDate: "2024-09-23",
         bindings: {
           TEST_MIGRATIONS: await readD1Migrations(path.join(import.meta.dirname, "../../infra/migrations"))
         }

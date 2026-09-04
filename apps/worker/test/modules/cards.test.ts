@@ -10,7 +10,7 @@ describe("card lifecycle", () => {
     await owner("/api/v1/stations", { method: "POST", body: JSON.stringify({ callsign: "BA4RC", is_default: true }) });
     const qso = await owner("/api/v1/qsos", { method: "POST", body: JSON.stringify({ station_callsign: "BA4RC", call: "BG4YYY", qso_date: "20260903", time_on: "1430", band: "40M", mode: "SSB", comment: "private" }) });
     const qsoId = (await qso.json() as { data: { id: number } }).data.id;
-    const template = await owner("/api/v1/templates", { method: "POST", body: JSON.stringify({ name: "test", schema_version: 1, base_width: 100, base_height: 100, elements: [] }) });
+    const template = await owner("/api/v1/card-templates", { method: "POST", body: JSON.stringify({ name: "test", schema_version: 1, base_width: 100, base_height: 100, elements: [] }) });
     const templateId = (await template.json() as { data: { id: number } }).data.id;
     const draft = await owner("/api/v1/cards", { method: "POST", body: JSON.stringify({ qso_id: qsoId, template_id: templateId }) });
     expect(draft.status).toBe(201);
