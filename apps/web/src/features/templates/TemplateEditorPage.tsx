@@ -98,7 +98,7 @@ export function TemplateEditorPage() {
           模板名称:
           <input value={name} onChange={(e) => setName(e.target.value)} required />
         </label>
-        <div style={{ display: "flex", gap: "1rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "1rem" }}>
           <label>
             宽度 (px):
             <input

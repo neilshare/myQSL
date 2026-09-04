@@ -108,7 +108,7 @@ export function CardCreatePage() {
       {error && <output role="alert" style={{ color: "red" }}>{error}</output>}
       {status && <output role="status">{status}</output>}
 
-      <div className="card-generator-controls" style={{ display: "flex", gap: "1rem", margin: "1rem 0" }}>
+      <div className="card-generator-controls">
         <label>
           选择 QSO:
           <select
@@ -148,7 +148,21 @@ export function CardCreatePage() {
         </button>
       </div>
 
-      <canvas ref={canvasRef} style={{ maxWidth: "100%", height: "auto", border: "1px solid #ccc" }} />
+      <div
+        className="canvas-container"
+        style={{
+          maxWidth: "100%",
+          overflow: "hidden",
+          borderRadius: "8px",
+          border: "1px solid var(--border-subtle, #334155)",
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.25)"
+        }}
+      >
+        <canvas
+          ref={canvasRef}
+          style={{ maxWidth: "100%", height: "auto", display: "block" }}
+        />
+      </div>
 
       {createdCard && (
         <div className="card-result" style={{ marginTop: "1rem" }}>

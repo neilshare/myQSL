@@ -64,54 +64,97 @@ export function StationSettings() {
       <p>管理默认台站和操作员信息。</p>
       {message && <output role="status">{message}</output>}
 
-      <form onSubmit={handleSubmit} aria-label="台站设置表单">
-        <label>
-          本台呼号
-          <input
-            value={callsign}
-            onChange={(e) => setCallsign(e.target.value)}
-            placeholder="例如 BI1ABC"
-            required
-          />
-        </label>
-        <label>
-          操作员呼号
-          <input
-            value={operator}
-            onChange={(e) => setOperator(e.target.value)}
-            placeholder="例如 BI1ABC"
-          />
-        </label>
-        <label>
-          网格坐标
-          <input
-            value={grid}
-            onChange={(e) => setGrid(e.target.value)}
-            placeholder="例如 OM89xx"
-          />
-        </label>
-        <label>
+      <form onSubmit={handleSubmit} aria-label="台站设置表单" style={{ display: "grid", gap: "1rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
+          <label>
+            本台呼号
+            <input
+              value={callsign}
+              onChange={(e) => setCallsign(e.target.value)}
+              placeholder="例如 BI1ABC"
+              required
+            />
+          </label>
+          <label>
+            操作员呼号
+            <input
+              value={operator}
+              onChange={(e) => setOperator(e.target.value)}
+              placeholder="例如 BI1ABC"
+            />
+          </label>
+          <label>
+            网格坐标
+            <input
+              value={grid}
+              onChange={(e) => setGrid(e.target.value)}
+              placeholder="例如 OM89xx"
+            />
+          </label>
+        </div>
+        <label
+          className="checkbox-label"
+          style={{ display: "flex", alignItems: "center", gap: "0.6rem", cursor: "pointer", minHeight: "44px" }}
+        >
           <input
             type="checkbox"
             checked={isDefault}
             onChange={(e) => setIsDefault(e.target.checked)}
+            style={{ width: "1.25rem", height: "1.25rem", minHeight: "1.25rem" }}
           />
-          设为默认台站
+          <span>设为默认台站</span>
         </label>
-        <button type="submit">添加台站</button>
+        <button type="submit" style={{ maxWidth: "240px" }}>添加台站</button>
       </form>
 
-      <div className="station-list" style={{ marginTop: "1rem" }}>
+      <div className="station-list" style={{ display: "grid", gap: "0.75rem", marginTop: "1.5rem" }}>
         <h3>现有台站</h3>
         {stations.length === 0 ? (
           <p>暂无台站配置</p>
         ) : (
           stations.map((s) => (
-            <article key={s.id}>
-              <strong>{s.callsign}</strong>
-              {s.operator_callsign && <span> (操作员: {s.operator_callsign})</span>}
-              {s.grid_square && <span> [网格: {s.grid_square}]</span>}
-              {Boolean(s.is_default) && <em> (默认)</em>}
+            <article
+              key={s.id}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: "0.5rem",
+                padding: "0.85rem 1rem",
+                background: "var(--bg-card)",
+                border: "1px solid var(--border-subtle)",
+                borderRadius: "8px"
+              }}
+            >
+              <div>
+                <strong style={{ fontSize: "1.1rem" }}>{s.callsign}</strong>
+                {s.operator_callsign && (
+                  <span style={{ color: "var(--text-muted)", marginLeft: "0.75rem" }}>
+                    操作员: {s.operator_callsign}
+                  </span>
+                )}
+                {s.grid_square && (
+                  <span style={{ color: "var(--text-muted)", marginLeft: "0.75rem" }}>
+                    网格: {s.grid_square}
+                  </span>
+                )}
+              </div>
+              {Boolean(s.is_default) && (
+                <span
+                  style={{
+                    background: "rgba(16, 185, 129, 0.15)",
+                    color: "#34d399",
+                    padding: "2px 8px",
+                    borderRadius: "9999px",
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                    border: "1px solid rgba(16, 185, 129, 0.3)"
+                  }}
+                >
+                  (默认)
+                </span>
+              )}
             </article>
           ))
         )}

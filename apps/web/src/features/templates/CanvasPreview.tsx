@@ -31,5 +31,25 @@ export function CanvasPreview({
     };
   }, [template, qso, backgroundUrl]);
 
-  return <canvas ref={ref} width={1264} height={848} aria-label="QSL 预览" />;
+  return (
+    <div
+      className="canvas-wrapper"
+      style={{
+        maxWidth: "100%",
+        overflow: "hidden",
+        borderRadius: "8px",
+        border: "1px solid var(--border-subtle, #334155)",
+        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)"
+      }}
+    >
+      <canvas
+        ref={ref}
+        width={1264}
+        height={848}
+        aria-label="QSL 预览"
+        style={{ maxWidth: "100%", height: "auto", display: "block", aspectRatio: "1264 / 848" }}
+      />
+    </div>
+  );
 }
+

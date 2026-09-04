@@ -23,20 +23,35 @@ export function ImportPage() {
   };
 
   return (
-    <section style={{ maxWidth: "600px", margin: "40px auto", padding: "0 20px" }}>
-      <h2>ADIF 日志批量导入</h2>
-      <p style={{ color: "#666" }}>支持标准 ADIF 3.x 格式日志文件（.adi / .adif），自动无损保留全部自定义扩展标签。</p>
-      <div style={{ marginTop: "20px" }}>
-        <input
-          type="file"
-          accept=".adi,.adif"
-          disabled={busy}
-          onChange={handleFileChange}
-        />
+    <section style={{ maxWidth: "680px", margin: "0 auto", padding: "0" }}>
+      <div className="card-section" style={{ padding: "1.75rem" }}>
+        <h2 style={{ marginTop: 0, fontSize: "1.5rem" }}>📥 ADIF 日志批量导入</h2>
+        <p style={{ color: "var(--text-muted)", fontSize: "0.95rem", lineHeight: 1.5 }}>
+          支持标准 ADIF 3.x 格式日志文件（.adi / .adif），自动无损保留全部自定义扩展标签，支持千万级通联分块导入。
+        </p>
+
+        <div style={{ marginTop: "1.5rem", padding: "1.5rem", border: "2px dashed var(--border-subtle)", borderRadius: "8px", textAlign: "center", background: "#0b132b" }}>
+          <input
+            type="file"
+            accept=".adi,.adif"
+            disabled={busy}
+            onChange={handleFileChange}
+            style={{ maxWidth: "320px", margin: "0 auto" }}
+          />
+        </div>
+
+        <p
+          role="status"
+          style={{
+            marginTop: "1.25rem",
+            color: busy ? "#60a5fa" : message.includes("成功") ? "#34d399" : "var(--text-muted)",
+            fontWeight: 500,
+            fontSize: "0.95rem"
+          }}
+        >
+          {message}
+        </p>
       </div>
-      <p role="status" style={{ marginTop: "16px", color: busy ? "#2563eb" : "#374151" }}>
-        {message}
-      </p>
     </section>
   );
 }

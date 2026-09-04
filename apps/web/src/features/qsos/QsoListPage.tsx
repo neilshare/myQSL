@@ -48,19 +48,39 @@ export function QsoListPage() {
 
   return (
     <section>
-      <header className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <header className="page-header">
         <h2>QSO 日志</h2>
         <ExportButton />
       </header>
-      <QsoFilters onFilter={handleFilter} />
-      <QsoForm
-        initial={{ call: "", station_callsign: "BI1ABC", qso_date: "", time_on: "", band: "", mode: "" }}
-        api={api.qsos}
-        onSaved={() => void loadQsos(filters)}
-      />
+
+      <div className="card-section" style={{ marginBottom: "1.25rem" }}>
+        <h3 style={{ marginTop: 0, marginBottom: "0.75rem", fontSize: "1.1rem" }}>🔍 日志筛选</h3>
+        <QsoFilters onFilter={handleFilter} />
+      </div>
+
+      <div className="card-section" style={{ marginBottom: "1.5rem" }}>
+        <h3 style={{ marginTop: 0, marginBottom: "0.75rem", fontSize: "1.1rem" }}>✍️ 录入新通联</h3>
+        <QsoForm
+          initial={{ call: "", station_callsign: "BI1ABC", qso_date: "", time_on: "", band: "", mode: "" }}
+          api={api.qsos}
+          onSaved={() => void loadQsos(filters)}
+        />
+      </div>
+
       {editingRow && (
-        <div className="edit-modal" role="dialog" aria-label="编辑 QSO" style={{ margin: "16px 0", padding: "16px", border: "2px solid #2563eb", borderRadius: "8px" }}>
-          <h3>编辑 QSO #{editingRow.id}</h3>
+        <div
+          className="edit-modal"
+          role="dialog"
+          aria-label="编辑 QSO"
+          style={{
+            margin: "1rem 0",
+            padding: "1.25rem",
+            border: "2px solid var(--accent-primary, #2563eb)",
+            borderRadius: "10px",
+            background: "var(--bg-card, #1c2541)"
+          }}
+        >
+          <h3 style={{ marginTop: 0 }}>编辑 QSO #{editingRow.id}</h3>
           <QsoForm
             initial={{
               id: editingRow.id,
@@ -79,19 +99,50 @@ export function QsoListPage() {
               void loadQsos(filters);
             }}
           />
-          <button type="button" onClick={() => setEditingRow(null)} style={{ marginTop: "8px" }}>取消编辑</button>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => setEditingRow(null)}
+            style={{ marginTop: "1rem" }}
+          >
+            取消编辑
+          </button>
         </div>
       )}
+
       <div className="qso-list">
-        {rows.map((row, index) => (
-          <article key={String(row.id ?? index)}>
-            <strong>{String(row.call)}</strong>
-            <span>{String(row.qso_date)} {String(row.time_on)} UTC</span>
-            <span>{String(row.band)} / {String(row.mode)}</span>
-            <button type="button" onClick={() => setEditingRow(row)}>编辑</button>
-            <button type="button" onClick={() => void handleDelete(row)}>删除</button>
-          </article>
-        ))}
+        {rows.length === 0 ? (
+          <p style={{ color: "var(--text-muted)", textAlign: "center", padding: "2rem" }}>暂无通联记录</p>
+        ) : (
+          rows.map((row, index) => (
+            <article key={String(row.id ?? index)}>
+              <div className="qso-item-info">
+                <strong style={{ fontSize: "1.15rem", letterSpacing: "0.02em" }}>{String(row.call)}</strong>
+                <span style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>{String(row.qso_date)} {String(row.time_on)} UTC</span>
+                <span
+                  style={{
+                    background: "rgba(59, 130, 246, 0.15)",
+                    color: "#93c5fd",
+                    padding: "2px 8px",
+                    borderRadius: "4px",
+                    fontSize: "0.85rem",
+                    fontWeight: 600
+                  }}
+                >
+                  {String(row.band)} / {String(row.mode)}
+                </span>
+              </div>
+              <div className="qso-actions">
+                <button type="button" className="btn-secondary" onClick={() => setEditingRow(row)}>
+                  编辑
+                </button>
+                <button type="button" className="btn-danger" onClick={() => void handleDelete(row)}>
+                  删除
+                </button>
+              </div>
+            </article>
+          ))
+        )}
       </div>
     </section>
   );
