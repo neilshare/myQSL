@@ -1,4 +1,4 @@
-import { CardTemplateSchema, type CardTemplate } from "@eqsr/domain";
+import { CardTemplateSchema, type CardTemplate } from "@myqsl/domain";
 import QRCode from "qrcode";
 import { formatQsoField } from "./format";
 

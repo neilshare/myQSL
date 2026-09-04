@@ -7,7 +7,7 @@ const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 export const requireSameOrigin: MiddlewareHandler<{ Bindings: Env }> = async (c, next) => {
   if (MUTATING_METHODS.has(c.req.method)) {
     const origin = c.req.header("Origin");
-    const marker = c.req.header("X-EQSR-Request");
+    const marker = c.req.header("X-MYQSL-Request") ?? c.req.header("X-EQSR-Request");
     const isLocalEnv = c.env.APP_ENV === "local" || (c.env as any).APP_ENV === "test";
     const isAllowedOrigin =
       origin === c.env.PUBLIC_ORIGIN ||

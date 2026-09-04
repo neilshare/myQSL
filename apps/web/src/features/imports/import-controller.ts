@@ -1,4 +1,4 @@
-import { parseAdif } from "@eqsr/adif-codec";
+import { parseAdif } from "@myqsl/adif-codec";
 import { recordToQso } from "./adif-mapper";
 
 type ImportApi = {
@@ -33,6 +33,6 @@ export async function runImport(file: File, api: ImportApi, options: ImportOptio
   if (typeof api.completeJob === "function") {
     await api.completeJob(job.id);
   }
-  if (options.session !== false) sessionStorage.setItem("eqsr-import", JSON.stringify({ job_id: job.id, file_sha256: fileSha, last_confirmed_chunk: uploaded.length ? Math.max(...uploaded) : -1 }));
+  if (options.session !== false) sessionStorage.setItem("myqsl-import", JSON.stringify({ job_id: job.id, file_sha256: fileSha, last_confirmed_chunk: uploaded.length ? Math.max(...uploaded) : -1 }));
   return { job_id: job.id, total: records.length, chunks: chunks.length };
 }

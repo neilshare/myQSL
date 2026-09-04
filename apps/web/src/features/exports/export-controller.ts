@@ -1,4 +1,4 @@
-import { serializeAdif, type AdifRecord } from "@eqsr/adif-codec";
+import { serializeAdif, type AdifRecord } from "@myqsl/adif-codec";
 import { qsoToAdifRecord } from "../imports/adif-mapper";
 
 export async function exportAdif(api: { list: (cursor?: string) => Promise<{ data: Array<Record<string, unknown>> | { data: Array<Record<string, unknown>> }; next_cursor?: string | null }> }): Promise<string> {
@@ -13,5 +13,5 @@ export async function exportAdif(api: { list: (cursor?: string) => Promise<{ dat
     }
     cursor = page.next_cursor ?? undefined;
   } while (cursor);
-  return serializeAdif(records, { programId: "eQSR", adifVersion: "3.1.7" });
+  return serializeAdif(records, { programId: "myQSL", adifVersion: "3.1.7" });
 }

@@ -1,4 +1,4 @@
-import { CardTemplateSchema } from "@eqsr/domain";
+import { CardTemplateSchema } from "@myqsl/domain";
 import { MediaStore } from "../../platform/r2";
 import { TemplateRepository, type TemplateRow } from "./repository";
 

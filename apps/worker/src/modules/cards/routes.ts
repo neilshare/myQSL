@@ -46,7 +46,7 @@ export function registerCardRoutes(app: Hono<{ Bindings: Env; Variables: Request
       });
       return c.json({ data: card }, 201);
     } catch (error) {
-      return problem(422, "https://eqsr.app/problems/validation", "Validation failed", error instanceof Error ? error.message : "Invalid card", c.req.path);
+      return problem(422, "https://myqsl.app/problems/validation", "Validation failed", error instanceof Error ? error.message : "Invalid card", c.req.path);
     }
   });
   app.on(["POST", "PUT"], "/api/v1/cards/:id/image", async (c) => {
@@ -54,7 +54,7 @@ export function registerCardRoutes(app: Hono<{ Bindings: Env; Variables: Request
       const row = await service(c).attachImage(c.req.param("id"), await c.req.arrayBuffer(), c.req.header("X-Content-SHA256"));
       return c.json({ data: row });
     } catch (error) {
-      return problem(409, "https://eqsr.app/problems/card-state", "Invalid card state", error instanceof Error ? error.message : "Card image rejected", c.req.path);
+      return problem(409, "https://myqsl.app/problems/card-state", "Invalid card state", error instanceof Error ? error.message : "Card image rejected", c.req.path);
     }
   });
   app.post("/api/v1/cards/:id/publish", async (c) => {
@@ -72,7 +72,7 @@ export function registerCardRoutes(app: Hono<{ Bindings: Env; Variables: Request
       });
       return c.json({ data: row });
     } catch (error) {
-      return problem(409, "https://eqsr.app/problems/card-state", "Invalid card state", error instanceof Error ? error.message : "Card cannot be published", c.req.path);
+      return problem(409, "https://myqsl.app/problems/card-state", "Invalid card state", error instanceof Error ? error.message : "Card cannot be published", c.req.path);
     }
   });
   app.post("/api/v1/cards/:id/void", async (c) => {
@@ -89,7 +89,7 @@ export function registerCardRoutes(app: Hono<{ Bindings: Env; Variables: Request
       });
       return c.json({ data: row });
     } catch (error) {
-      return problem(409, "https://eqsr.app/problems/card-state", "Invalid card state", error instanceof Error ? error.message : "Card cannot be voided", c.req.path);
+      return problem(409, "https://myqsl.app/problems/card-state", "Invalid card state", error instanceof Error ? error.message : "Card cannot be voided", c.req.path);
     }
   });
 }

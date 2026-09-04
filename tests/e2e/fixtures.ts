@@ -1,9 +1,11 @@
 import { test as base, expect, type Page, type APIRequestContext } from "@playwright/test";
-import type { CardTemplate, QsoInput, StationInput } from "@eqsr/domain";
+import type { CardTemplate, QsoInput, StationInput } from "@myqsl/domain";
 
 export const TEST_OWNER_HEADERS = {
+  "X-MYQSL-Test-Actor": "e2e-owner",
   "X-EQSR-Test-Actor": "e2e-owner",
   "Authorization": "Bearer local-e2e-owner",
+  "X-MYQSL-Request": "1",
   "X-EQSR-Request": "1",
   "Origin": "http://127.0.0.1:8787"
 };
@@ -13,9 +15,9 @@ export const SAMPLE_PNG = Buffer.from(
   "base64"
 );
 
-export const SAMPLE_ADIF_CONTENT = `eQSR Lossless ADIF Export/Import Test
+export const SAMPLE_ADIF_CONTENT = `myQSL Lossless ADIF Export/Import Test
 <ADIF_VER:5>3.1.4
-<PROGRAMID:4>eQSR
+<PROGRAMID:5>myQSL
 <EOH>
 <CALL:6>VR2E2E
 <STATION_CALLSIGN:6>BI1ABC

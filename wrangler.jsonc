@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "eqsr",
+  "name": "myqsl",
   "main": "./apps/worker/src/index.ts",
   "compatibility_date": "2026-09-03",
   "assets": {
@@ -12,12 +12,12 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "eqsr-prod",
+      "database_name": "myqsl-prod",
       "database_id": "00000000-0000-0000-0000-000000000001",
       "migrations_dir": "./infra/migrations"
     }
   ],
-  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "eqsr-media" }],
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "myqsl-media" }],
   "ratelimits": [
     {
       "name": "PUBLIC_RATE_LIMITER",
@@ -28,14 +28,14 @@
   "vars": {
     "APP_ENV": "local",
     "PUBLIC_ORIGIN": "http://127.0.0.1:8787",
-    "ACCESS_TEAM_DOMAIN": "https://eqsr.cloudflareaccess.com",
+    "ACCESS_TEAM_DOMAIN": "https://myqsl.cloudflareaccess.com",
     "ACCESS_AUD": "local-development-audience",
     "TEST_AUTH_ENABLED": "1"
   },
   "observability": { "enabled": true },
   "workflows": [
     {
-      "name": "eqsr-d1-backup",
+      "name": "myqsl-d1-backup",
       "binding": "D1_BACKUP_WORKFLOW",
       "class_name": "D1BackupWorkflow",
       "schedules": ["0 20 * * *"]

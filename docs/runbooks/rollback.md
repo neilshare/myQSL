@@ -8,7 +8,7 @@
 ## 2. Worker 版本即时回滚流程
 
 Cloudflare Workers 支持基于 Deployment 版本的秒级流量瞬时回退：
-1. 登录 Cloudflare Dashboard，导航至 **Compute (Workers) -> Workers & Pages -> eqsr**；
+1. 登录 Cloudflare Dashboard，导航至 **Compute (Workers) -> Workers & Pages -> myqsl**；
 2. 进入 **Deployments** 选项卡，查看当前生产运行版本及历史版本列表；
 3. 定位至上一个已通过全面验证的稳定版本（Status: Active 之前的版本）；
 4. 点击右侧菜单并选择 **Rollback to this deployment**，确认回滚操作；
@@ -29,8 +29,8 @@ Cloudflare Workers 支持基于 Deployment 版本的秒级流量瞬时回退：
 完成 Worker 回滚后，必须立即执行以下检查：
 1. **自动化冒烟检测**：
    ```bash
-   EQSR_PRODUCTION_ORIGIN=https://<operator-domain> pnpm tsx scripts/smoke.mts --origin "$EQSR_PRODUCTION_ORIGIN"
-   curl -f -s -S "$EQSR_PRODUCTION_ORIGIN/readyz"
+   MYQSL_PRODUCTION_ORIGIN=https://<operator-domain> pnpm tsx scripts/smoke.mts --origin "$MYQSL_PRODUCTION_ORIGIN"
+   curl -f -s -S "$MYQSL_PRODUCTION_ORIGIN/readyz"
    ```
 2. **公开查验端验证**：
    - 打开浏览器访问公开卡片查验页面，确认页面资源加载正常，无 404 或脚本语法报错；

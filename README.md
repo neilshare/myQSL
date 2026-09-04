@@ -1,6 +1,6 @@
-# eQSR
+# myQSL
 
-eQSR（Electronic QSO & QSL Record）是一个单所有者无线电日志与电子 QSL 平台：QSO 管理、ADIF 3.1.7 双向互通、浏览器 Canvas 卡片、不可枚举公开查验，以及可验证的 D1/R2 备份。
+myQSL（Electronic QSO & QSL Record）是一个单所有者无线电日志与电子 QSL 平台：QSO 管理、ADIF 3.1.7 双向互通、浏览器 Canvas 卡片、不可枚举公开查验，以及可验证的 D1/R2 备份。
 
 ## 本地开发
 
@@ -10,7 +10,7 @@ pnpm db:migrate:local
 pnpm dev
 ```
 
-常用检查：`pnpm run check`、`pnpm test:e2e`、`pnpm check:bundle`、`pnpm check:placeholders`。本地测试身份仅接受 `X-EQSR-Test-Actor` 或 `Authorization: Bearer local-e2e-owner`，生产环境只接受 Cloudflare Access JWT。
+常用检查：`pnpm run check`、`pnpm test:e2e`、`pnpm check:bundle`、`pnpm check:placeholders`。本地测试身份支持 `X-MYQSL-Test-Actor` 或 `Authorization: Bearer local-e2e-owner`，生产环境只接受 Cloudflare Access JWT。
 
 ## 部署模型
 

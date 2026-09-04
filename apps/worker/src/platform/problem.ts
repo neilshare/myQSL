@@ -16,9 +16,9 @@ export function problem(
 }
 
 export const Problems = {
-  authRequired: "https://eqsr.app/problems/auth-required",
-  authInvalid: "https://eqsr.app/problems/auth-invalid",
-  originForbidden: "https://eqsr.app/problems/origin-forbidden",
-  rateLimited: "https://eqsr.app/problems/rate-limited",
-  notFound: "https://eqsr.app/problems/not-found"
+  authRequired: "https://myqsl.app/problems/auth-required",
+  authInvalid: "https://myqsl.app/problems/auth-invalid",
+  originForbidden: "https://myqsl.app/problems/origin-forbidden",
+  rateLimited: "https://myqsl.app/problems/rate-limited",
+  notFound: "https://myqsl.app/problems/not-found"
 } as const;

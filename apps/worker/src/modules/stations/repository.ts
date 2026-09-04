@@ -1,4 +1,4 @@
-import type { StationInput } from "@eqsr/domain";
+import type { StationInput } from "@myqsl/domain";
 
 export interface StationRow extends Omit<StationInput, "is_default"> {
   id: number;

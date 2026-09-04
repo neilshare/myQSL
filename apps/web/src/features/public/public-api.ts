@@ -1,4 +1,4 @@
-import { API_PATHS } from "@eqsr/domain";
+import { API_PATHS } from "@myqsl/domain";
 
 export interface PublicCardLookupItem {
   public_id: string;

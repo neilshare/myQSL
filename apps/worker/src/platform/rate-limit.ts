@@ -10,7 +10,7 @@ async function digest(value: string): Promise<string> {
 export async function enforceLookupLimit(c: Context<any>, call: string): Promise<Response | null> {
   const ip = c.req.header("CF-Connecting-IP") ?? "unknown";
   const day = new Date().toISOString().slice(0, 10);
-  const salt = c.env.RATE_LIMIT_SALT ?? "eqsr-salt-default";
+  const salt = c.env.RATE_LIMIT_SALT ?? "myqsl-salt-default";
   const ipHash = await digest(`${salt}|${day}|${ip}`);
   const callHash = await digest(`${salt}|${call.trim().toUpperCase()}`);
   const key = await digest(`/api/v1/public/card-lookup|${ipHash}|${callHash}`);
@@ -23,7 +23,7 @@ export async function enforceLookupLimit(c: Context<any>, call: string): Promise
 
 export const enforcePublicLimit: MiddlewareHandler<{ Bindings: Env }> = async (c, next) => {
   const ip = c.req.header("CF-Connecting-IP") ?? "unknown";
-  const salt = c.env.RATE_LIMIT_SALT ?? "eqsr-salt-default";
+  const salt = c.env.RATE_LIMIT_SALT ?? "myqsl-salt-default";
   const key = await digest(`${salt}|${ip}`);
   const result = await c.env.PUBLIC_RATE_LIMITER.limit({ key });
   if (!result.success) {

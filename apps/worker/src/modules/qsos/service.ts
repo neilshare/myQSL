@@ -1,4 +1,4 @@
-import { makeDedupeKey, normalizeQso, QsoInputSchema, type QsoInput } from "@eqsr/domain";
+import { makeDedupeKey, normalizeQso, QsoInputSchema, type QsoInput } from "@myqsl/domain";
 import { StationRepository } from "../stations/repository";
 import { QsoRepository, type QsoInsert, type QsoRow } from "./repository";
 

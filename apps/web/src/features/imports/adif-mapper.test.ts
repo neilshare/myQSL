@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { recordToQso, qsoToAdifRecord } from "./adif-mapper";
-import { serializeAdif } from "@eqsr/adif-codec";
+import { serializeAdif } from "@myqsl/adif-codec";
 
 describe("ADIF Semantic Mapper", () => {
   it("preserves non-core fields in adif_extra and converts back losslessly", () => {
@@ -39,7 +39,7 @@ describe("ADIF Semantic Mapper", () => {
     expect(reconstructedRecord.fields.ADIF_EXTRA).toBeUndefined();
 
     // Serialize to string
-    const adiString = serializeAdif([reconstructedRecord], { programId: "eQSR", adifVersion: "3.1.7" });
+    const adiString = serializeAdif([reconstructedRecord], { programId: "myQSL", adifVersion: "3.1.7" });
     expect(adiString).toContain("<IOTA:6>AS-136");
     expect(adiString).toContain("<APP_EQSR_TEST:1>1");
     expect(adiString).not.toContain("ADIF_EXTRA");

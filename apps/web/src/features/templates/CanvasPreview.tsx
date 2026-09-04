@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { renderCard, type RenderInput } from "@eqsr/card-renderer";
+import { renderCard, type RenderInput } from "@myqsl/card-renderer";
 
 export function CanvasPreview({
   template,

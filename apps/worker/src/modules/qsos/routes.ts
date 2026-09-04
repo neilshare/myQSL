@@ -1,6 +1,6 @@
 import type { Hono } from "hono";
 import { z } from "zod";
-import { decodeCursor, encodeCursor, QsoInputSchema } from "@eqsr/domain";
+import { decodeCursor, encodeCursor, QsoInputSchema } from "@myqsl/domain";
 import type { Env } from "../../env";
 import type { RequestVariables } from "../../platform/request-context";
 import { problem } from "../../platform/problem";
@@ -24,7 +24,7 @@ const listSchema = z.object({
 
 function service(c: { env: Env }) { return new QsoService(new QsoRepository(c.env.DB), new StationRepository(c.env.DB)); }
 function etag(row: { id: number; version: number }) { return `W/"qso-${row.id}-${row.version}"`; }
-function validation(error: unknown, path: string) { return error instanceof z.ZodError ? problem(422, "https://eqsr.app/problems/validation", "Validation failed", error.message, path) : problem(500, "https://eqsr.app/problems/internal", "Internal error", "Unexpected QSO error", path); }
+function validation(error: unknown, path: string) { return error instanceof z.ZodError ? problem(422, "https://myqsl.app/problems/validation", "Validation failed", error.message, path) : problem(500, "https://myqsl.app/problems/internal", "Internal error", "Unexpected QSO error", path); }
 
 export function registerQsoRoutes(app: Hono<{ Bindings: Env; Variables: RequestVariables }>): void {
   app.post("/api/v1/qsos", async (c) => {
@@ -44,7 +44,7 @@ export function registerQsoRoutes(app: Hono<{ Bindings: Env; Variables: RequestV
       c.header("ETag", etag(result.qso));
       return c.json({ data: toQsoResponse(result.qso) }, 201);
     } catch (error) {
-      if (error instanceof DuplicateQsoError) return new Response(JSON.stringify({ type: "https://eqsr.app/problems/duplicate", title: "Duplicate QSO", status: 409, detail: error.message, duplicate_of: error.duplicateOf }), { status: 409, headers: { "Content-Type": "application/problem+json; charset=utf-8", "Cache-Control": "no-store" } });
+      if (error instanceof DuplicateQsoError) return new Response(JSON.stringify({ type: "https://myqsl.app/problems/duplicate", title: "Duplicate QSO", status: 409, detail: error.message, duplicate_of: error.duplicateOf }), { status: 409, headers: { "Content-Type": "application/problem+json; charset=utf-8", "Cache-Control": "no-store" } });
       return validation(error, c.req.path);
     }
   });
@@ -77,36 +77,36 @@ export function registerQsoRoutes(app: Hono<{ Bindings: Env; Variables: RequestV
   });
   app.get("/api/v1/qsos/:id", async (c) => {
     const id = idSchema.safeParse(c.req.param("id"));
-    if (!id.success) return problem(422, "https://eqsr.app/problems/validation", "Validation failed", "Invalid QSO id", c.req.path);
+    if (!id.success) return problem(422, "https://myqsl.app/problems/validation", "Validation failed", "Invalid QSO id", c.req.path);
     const row = await service(c).get(id.data, c.req.query("include_deleted") === "true");
-    if (!row) return problem(404, "https://eqsr.app/problems/not-found", "Not found", "QSO not found", c.req.path);
+    if (!row) return problem(404, "https://myqsl.app/problems/not-found", "Not found", "QSO not found", c.req.path);
     c.header("ETag", etag(row));
     return c.json({ data: toQsoResponse(row) });
   });
   app.patch("/api/v1/qsos/:id", async (c) => {
     const id = idSchema.safeParse(c.req.param("id"));
     const match = c.req.header("If-Match")?.match(/^W\/"qso-(\d+)-(\d+)"$/u);
-    if (!id.success || !match) return problem(412, "https://eqsr.app/problems/precondition", "Precondition required", "A current QSO ETag is required", c.req.path);
+    if (!id.success || !match) return problem(412, "https://myqsl.app/problems/precondition", "Precondition required", "A current QSO ETag is required", c.req.path);
     try {
       const row = await service(c).update(id.data, Number(match[2]), await c.req.json());
       c.header("ETag", etag(row));
       return c.json({ data: toQsoResponse(row) });
     } catch (error) {
-      if (error instanceof QsoNotFoundError) return problem(412, "https://eqsr.app/problems/stale", "Stale version", "The QSO changed since it was read", c.req.path);
+      if (error instanceof QsoNotFoundError) return problem(412, "https://myqsl.app/problems/stale", "Stale version", "The QSO changed since it was read", c.req.path);
       return validation(error, c.req.path);
     }
   });
   app.delete("/api/v1/qsos/:id", async (c) => {
     const id = idSchema.safeParse(c.req.param("id"));
     const match = c.req.header("If-Match")?.match(/^W\/"qso-(\d+)-(\d+)"$/u);
-    if (!id.success || !match) return problem(412, "https://eqsr.app/problems/precondition", "Precondition required", "A current QSO ETag is required", c.req.path);
+    if (!id.success || !match) return problem(412, "https://myqsl.app/problems/precondition", "Precondition required", "A current QSO ETag is required", c.req.path);
     try { await service(c).trash(id.data, Number(match[2])); return new Response(null, { status: 204 }); }
-    catch { return problem(412, "https://eqsr.app/problems/stale", "Stale version", "The QSO changed since it was read", c.req.path); }
+    catch { return problem(412, "https://myqsl.app/problems/stale", "Stale version", "The QSO changed since it was read", c.req.path); }
   });
   app.post("/api/v1/qsos/:id/restore", async (c) => {
     const id = idSchema.safeParse(c.req.param("id"));
-    if (!id.success) return problem(422, "https://eqsr.app/problems/validation", "Validation failed", "Invalid QSO id", c.req.path);
+    if (!id.success) return problem(422, "https://myqsl.app/problems/validation", "Validation failed", "Invalid QSO id", c.req.path);
     try { const row = await service(c).restore(id.data); c.header("ETag", etag(row)); return c.json({ data: toQsoResponse(row) }); }
-    catch { return problem(404, "https://eqsr.app/problems/not-found", "Not found", "Deleted QSO not found", c.req.path); }
+    catch { return problem(404, "https://myqsl.app/problems/not-found", "Not found", "Deleted QSO not found", c.req.path); }
   });
 }

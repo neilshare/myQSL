@@ -1,4 +1,4 @@
-import { normalizeStation, StationInputSchema, type StationInput } from "@eqsr/domain";
+import { normalizeStation, StationInputSchema, type StationInput } from "@myqsl/domain";
 import { StationRepository, type StationRow } from "./repository";
 
 export class StationService {

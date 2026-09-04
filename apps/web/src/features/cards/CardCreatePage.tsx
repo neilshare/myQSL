@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { api, type QsoRecord, type CardTemplateRow, type CardRow } from "../../lib/api-client";
-import { renderCard } from "@eqsr/card-renderer";
-import type { CardTemplate } from "@eqsr/domain";
+import { renderCard } from "@myqsl/card-renderer";
+import type { CardTemplate } from "@myqsl/domain";
 
 export function CardCreatePage() {
   const [qsos, setQsos] = useState<QsoRecord[]>([]);

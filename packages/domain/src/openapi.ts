@@ -1,15 +1,15 @@
 import { API_PATHS } from "./api-paths";
 
-export const eqsrOpenApiSpec = {
+export const myqslOpenApiSpec = {
   openapi: "3.1.0",
   info: {
-    title: "eQSR Core API",
+    title: "myQSL Core API",
     version: "1.0.0",
     description: "Electronic QSL Card System API for Amateur Radio Operators"
   },
   servers: [
     {
-      url: "https://eqsr.app",
+      url: "https://myqsl.app",
       description: "Production Server"
     },
     {
@@ -682,3 +682,5 @@ export const eqsrOpenApiSpec = {
     }
   }
 } as const;
+
+export const eqsrOpenApiSpec = myqslOpenApiSpec;

@@ -1,10 +1,10 @@
 {
-  "name": "@eqsr/worker",
+  "name": "@myqsl/worker",
   "private": true,
   "type": "module",
   "scripts": { "typecheck": "tsc --noEmit" },
   "dependencies": {
-    "@eqsr/domain": "workspace:*",
+    "@myqsl/domain": "workspace:*",
     "drizzle-orm": "0.44.5",
     "hono": "4.9.6",
     "jose": "6.1.0",

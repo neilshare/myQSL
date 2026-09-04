@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { api, type CardTemplateRow } from "../../lib/api-client";
 import { CanvasPreview } from "./CanvasPreview";
-import type { CardTemplate } from "@eqsr/domain";
+import type { CardTemplate } from "@myqsl/domain";
 
 export function TemplateEditorPage() {
   const [name, setName] = useState("标准卡片模板");

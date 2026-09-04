@@ -1,5 +1,5 @@
 {
-  "name": "@eqsr/adif-codec",
+  "name": "@myqsl/adif-codec",
   "private": true,
   "type": "module",
   "exports": { ".": "./src/index.ts" },

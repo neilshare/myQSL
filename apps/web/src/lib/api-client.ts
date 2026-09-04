@@ -5,7 +5,7 @@ import type {
   CardRow,
   PublicCardSummary
 } from "./api-types";
-import type { CardTemplate, QsoInput, StationInput } from "@eqsr/domain";
+import type { CardTemplate, QsoInput, StationInput } from "@myqsl/domain";
 
 export * from "./api-types";
 
@@ -19,7 +19,7 @@ export class ProblemError extends Error {
 }
 
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<{ data: T; next_cursor?: string | null; etag: string | null }> {
-  const response = await fetch(path, { ...init, credentials: "same-origin", headers: { "Content-Type": "application/json", "X-EQSR-Request": "1", ...init.headers } });
+  const response = await fetch(path, { ...init, credentials: "same-origin", headers: { "Content-Type": "application/json", "X-MYQSL-Request": "1", "X-EQSR-Request": "1", ...init.headers } });
   if (!response.ok) throw await ProblemError.fromResponse(response);
   if (response.status === 204) return { data: undefined as T, etag: response.headers.get("etag") };
   const json = (await response.json()) as Record<string, unknown>;
@@ -49,7 +49,7 @@ export const api = {
     uploadBackground: async (id: number, file: Blob | ArrayBuffer, contentType = "image/png") => {
       const response = await fetch(`/api/v1/card-templates/${id}/background`, {
         method: "PUT",
-        headers: { "Content-Type": contentType, "X-EQSR-Request": "1" },
+        headers: { "Content-Type": contentType, "X-MYQSL-Request": "1", "X-EQSR-Request": "1" },
         credentials: "same-origin",
         body: file
       });
@@ -65,7 +65,7 @@ export const api = {
     uploadImage: async (id: string, imageBytes: Blob | ArrayBuffer) => {
       const response = await fetch(`/api/v1/cards/${id}/image`, {
         method: "PUT",
-        headers: { "Content-Type": "image/png", "X-EQSR-Request": "1" },
+        headers: { "Content-Type": "image/png", "X-MYQSL-Request": "1", "X-EQSR-Request": "1" },
         credentials: "same-origin",
         body: imageBytes
       });

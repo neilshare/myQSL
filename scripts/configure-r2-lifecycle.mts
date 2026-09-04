@@ -31,7 +31,7 @@ export const r2LifecycleRules = {
 async function main() {
   const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
   const token = process.env.CLOUDFLARE_API_TOKEN || process.env.D1_REST_API_TOKEN;
-  const bucket = process.env.R2_BUCKET_NAME || "eqsr-media";
+  const bucket = process.env.R2_BUCKET_NAME || "myqsl-media";
 
   const configPath = resolve(process.cwd(), "infra/r2-lifecycle.json");
   await writeFile(configPath, JSON.stringify(r2LifecycleRules, null, 2), "utf8");

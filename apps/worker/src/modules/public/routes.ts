@@ -12,18 +12,18 @@ export function registerPublicRoutes(app: Hono<{ Bindings: Env; Variables: Reque
   app.get("/api/v1/public/cards/:publicId", async (c) => {
     const service = new PublicCardService(new CardRepository(c.env.DB), c.env.PUBLIC_ORIGIN);
     const raw = await service.getRaw(c.req.param("publicId"));
-    if (!raw || raw.status === "draft" || raw.status === "ready") return problem(404, "https://eqsr.app/problems/not-found", "Not found", "Published card not found", c.req.path);
-    if (raw.status === "void") return problem(410, "https://eqsr.app/problems/void-card", "Card voided", "This card is no longer available", c.req.path);
+    if (!raw || raw.status === "draft" || raw.status === "ready") return problem(404, "https://myqsl.app/problems/not-found", "Not found", "Published card not found", c.req.path);
+    if (raw.status === "void") return problem(410, "https://myqsl.app/problems/void-card", "Card voided", "This card is no longer available", c.req.path);
     const view = await service.get(c.req.param("publicId"));
     return new Response(JSON.stringify(view), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=60, stale-while-revalidate=300" } });
   });
   app.get("/api/v1/public/cards/:publicId/image", async (c) => {
     const row = await new PublicCardService(new CardRepository(c.env.DB), c.env.PUBLIC_ORIGIN).getRaw(c.req.param("publicId"));
-    if (!row || row.status === "draft" || row.status === "ready") return problem(404, "https://eqsr.app/problems/not-found", "Not found", "Card image not found", c.req.path);
-    if (row.status === "void") return problem(410, "https://eqsr.app/problems/void-card", "Card voided", "This card is no longer available", c.req.path);
-    if (!row.image_r2_key) return problem(404, "https://eqsr.app/problems/not-found", "Not found", "Card image not found", c.req.path);
+    if (!row || row.status === "draft" || row.status === "ready") return problem(404, "https://myqsl.app/problems/not-found", "Not found", "Card image not found", c.req.path);
+    if (row.status === "void") return problem(410, "https://myqsl.app/problems/void-card", "Card voided", "This card is no longer available", c.req.path);
+    if (!row.image_r2_key) return problem(404, "https://myqsl.app/problems/not-found", "Not found", "Card image not found", c.req.path);
     const object = await c.env.MEDIA.get(row.image_r2_key);
-    if (!object) return problem(404, "https://eqsr.app/problems/not-found", "Not found", "Card image not found", c.req.path);
+    if (!object) return problem(404, "https://myqsl.app/problems/not-found", "Not found", "Card image not found", c.req.path);
     return new Response(object.body, { headers: { "Content-Type": object.httpMetadata?.contentType ?? "image/png", ETag: row.content_sha256 ? `"${row.content_sha256}"` : object.httpEtag, "Cache-Control": "public, max-age=31536000, immutable" } });
   });
   app.post("/api/v1/public/card-lookup", async (c) => {
@@ -32,10 +32,10 @@ export function registerPublicRoutes(app: Hono<{ Bindings: Env; Variables: Reque
     try {
       body = await c.req.json();
     } catch {
-      return problem(422, "https://eqsr.app/problems/validation", "Validation failed", "Invalid JSON payload", c.req.path);
+      return problem(422, "https://myqsl.app/problems/validation", "Validation failed", "Invalid JSON payload", c.req.path);
     }
     const parsed = lookupSchema.safeParse(body);
-    if (!parsed.success) return problem(422, "https://eqsr.app/problems/validation", "Validation failed", "Exact call and UTC date are required", c.req.path);
+    if (!parsed.success) return problem(422, "https://myqsl.app/problems/validation", "Validation failed", "Exact call and UTC date are required", c.req.path);
     const rateLimitRes = await enforceLookupLimit(c, parsed.data.call);
     if (rateLimitRes) return rateLimitRes;
     const result = await new PublicCardService(new CardRepository(c.env.DB), c.env.PUBLIC_ORIGIN).lookup(parsed.data.call.toUpperCase(), parsed.data.qso_date);

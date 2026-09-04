@@ -1,5 +1,5 @@
 /* global self, caches, URL, fetch */
-const VERSION = "eqsr-static-v1";
+const VERSION = "myqsl-static-v1";
 const STATIC_ASSETS = ["/", "/manifest.webmanifest"];
 self.addEventListener("install", (event) => event.waitUntil(caches.open(VERSION).then((cache) => cache.addAll(STATIC_ASSETS))));
 self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));

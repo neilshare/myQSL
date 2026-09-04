@@ -1,4 +1,4 @@
-import type { PrintableQsoField } from "@eqsr/domain";
+import type { PrintableQsoField } from "@myqsl/domain";
 
 export function formatQsoField(qso: Record<string, unknown>, field: PrintableQsoField): string {
   const value = qso[field];

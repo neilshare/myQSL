@@ -21,8 +21,8 @@ const stationInput = z.object({
 });
 
 function jsonError(error: unknown, path: string): Response {
-  if (error instanceof z.ZodError) return problem(422, "https://eqsr.app/problems/validation", "Validation failed", error.message, path);
-  return problem(500, "https://eqsr.app/problems/internal", "Internal error", "Unexpected station error", path);
+  if (error instanceof z.ZodError) return problem(422, "https://myqsl.app/problems/validation", "Validation failed", error.message, path);
+  return problem(500, "https://myqsl.app/problems/internal", "Internal error", "Unexpected station error", path);
 }
 
 export function registerStationRoutes(app: Hono<{ Bindings: Env; Variables: RequestVariables }>): void {
@@ -52,11 +52,11 @@ export function registerStationRoutes(app: Hono<{ Bindings: Env; Variables: Requ
   app.patch("/api/v1/stations/:id", async (c) => {
     const id = idSchema.safeParse(c.req.param("id"));
     const version = Number(c.req.header("If-Match")?.match(/station-\d+-(\d+)/u)?.[1]);
-    if (!id.success || !Number.isInteger(version)) return problem(412, "https://eqsr.app/problems/precondition", "Precondition required", "A current station ETag is required", c.req.path);
+    if (!id.success || !Number.isInteger(version)) return problem(412, "https://myqsl.app/problems/precondition", "Precondition required", "A current station ETag is required", c.req.path);
     try {
       const service = new StationService(new StationRepository(c.env.DB));
       const updated = await service.update(id.data, version, stationInput.parse(await c.req.json()));
-      if (!updated) return problem(412, "https://eqsr.app/problems/stale", "Stale version", "The station changed since it was read", c.req.path);
+      if (!updated) return problem(412, "https://myqsl.app/problems/stale", "Stale version", "The station changed since it was read", c.req.path);
       const audit = new AuditWriter(c.env.DB);
       await audit.append({
         actor: c.get("actor") ?? "unknown",

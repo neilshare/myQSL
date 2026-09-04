@@ -1,9 +1,9 @@
 {
-  "name": "@eqsr/card-renderer",
+  "name": "@myqsl/card-renderer",
   "private": true,
   "type": "module",
   "exports": { ".": "./src/index.ts" },
   "scripts": { "typecheck": "tsc --noEmit" },
-  "dependencies": { "@eqsr/domain": "workspace:*", "qrcode": "1.5.4" },
+  "dependencies": { "@myqsl/domain": "workspace:*", "qrcode": "1.5.4" },
   "devDependencies": { "@types/qrcode": "1.5.5" }
 }

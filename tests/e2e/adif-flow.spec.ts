@@ -1,5 +1,5 @@
 import { test, expect, createTestStation } from "./fixtures";
-import { parseAdif } from "@eqsr/adif-codec";
+import { parseAdif } from "@myqsl/adif-codec";
 
 test.describe("ADIF lossless import and export journey", () => {
   test("imports .adi with custom tags, renders in list, exports, and verifies 100% roundtrip fidelity", async ({
@@ -11,9 +11,9 @@ test.describe("ADIF lossless import and export journey", () => {
 
     // 1. Prepare unique ADIF content with custom fields
     const testCall = `VR${Date.now().toString().slice(-4)}AD`;
-    const adifContent = `eQSR Lossless ADIF Roundtrip Test
+    const adifContent = `myQSL Lossless ADIF Roundtrip Test
 <ADIF_VER:5>3.1.4
-<PROGRAMID:4>eQSR
+<PROGRAMID:5>myQSL
 <EOH>
 <CALL:${testCall.length}>${testCall}
 <STATION_CALLSIGN:6>BI1ABC
@@ -23,7 +23,7 @@ test.describe("ADIF lossless import and export journey", () => {
 <MODE:3>SSB
 <RST_SENT:2>59
 <RST_RCVD:2>59
-<APP_EQSR_CUSTOM:11>HELLO_WORLD
+<APP_MYQSL_CUSTOM:11>HELLO_WORLD
 <MY_CUSTOM_TAG:6>E2ETAG
 <EOR>
 `;
@@ -80,7 +80,7 @@ test.describe("ADIF lossless import and export journey", () => {
     expect(record.fields.MODE).toBe("SSB");
 
     // Custom tags lossless retention verification
-    expect(record.fields.APP_EQSR_CUSTOM).toBe("HELLO_WORLD");
+    expect(record.fields.APP_MYQSL_CUSTOM).toBe("HELLO_WORLD");
     expect(record.fields.MY_CUSTOM_TAG).toBe("E2ETAG");
   });
 });

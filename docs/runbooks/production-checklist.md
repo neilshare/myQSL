@@ -1,8 +1,8 @@
 # 首次上线检查清单
 
 ## 1. 基础架构与凭据准备
-- [ ] D1 数据库 `eqsr-prod` 已在 `apac` 区域创建，真实 UUID 已配置，无 `00000000-` 占位符。
-- [ ] R2 存储桶 `eqsr-media` 已创建，生命周期规则已应用（临时文件 7 天自动清除）。
+- [ ] D1 数据库 `myqsl-prod` 已在 `apac` 区域创建，真实 UUID 已配置，无 `00000000-` 占位符。
+- [ ] R2 存储桶 `myqsl-media` 已创建，生命周期规则已应用（临时文件 7 天自动清除）。
 - [ ] Cloudflare Access 路径策略已生效，JWT audience 与 Worker 生产环境变量保持一致。
 - [ ] 必需 Secret（`D1_REST_API_TOKEN`、`ACCESS_AUD`、`RATE_LIMIT_SALT`）已通过 `wrangler secret put` 写入目标账户。
 - [ ] 生产环境变量确认：`APP_ENV=production`、`TEST_AUTH_ENABLED=0`、`PUBLIC_ORIGIN` 必须为 HTTPS 域名。

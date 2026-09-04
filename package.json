@@ -1,10 +1,10 @@
 {
-  "name": "eqsr",
+  "name": "myqsl",
   "private": true,
   "packageManager": "pnpm@10.15.0",
   "engines": { "node": ">=24 <25" },
   "scripts": {
-    "build": "pnpm --filter @eqsr/web build",
+    "build": "pnpm --filter @myqsl/web build",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "ci": "pnpm check",
     "generate:openapi": "tsx scripts/generate-openapi.mts",

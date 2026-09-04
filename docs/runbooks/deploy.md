@@ -4,8 +4,8 @@
 
 1. 在目标 Cloudflare 账户执行创建命令：
    ```bash
-   wrangler d1 create eqsr-prod --location=apac
-   wrangler r2 bucket create eqsr-media
+   wrangler d1 create myqsl-prod --location=apac
+   wrangler r2 bucket create myqsl-media
    ```
 2. 将返回的实际 D1 UUID 写入生产配置，通过 `wrangler secret put` 设置生产必需密钥：
    ```bash
@@ -43,8 +43,8 @@
 
 部署成功后，立即运行自动化冒烟脚本与连通性探针：
 ```bash
-EQSR_PRODUCTION_ORIGIN=https://<operator-domain> pnpm tsx scripts/smoke.mts --origin "$EQSR_PRODUCTION_ORIGIN"
-curl -f -s -S "$EQSR_PRODUCTION_ORIGIN/readyz"
+MYQSL_PRODUCTION_ORIGIN=https://<operator-domain> pnpm tsx scripts/smoke.mts --origin "$MYQSL_PRODUCTION_ORIGIN"
+curl -f -s -S "$MYQSL_PRODUCTION_ORIGIN/readyz"
 ```
 验证标准：
 - `/healthz` 返回 HTTP 200 与 `{"status":"healthy"}`；

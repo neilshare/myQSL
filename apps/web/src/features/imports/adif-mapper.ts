@@ -1,4 +1,4 @@
-import type { AdifRecord } from "@eqsr/adif-codec";
+import type { AdifRecord } from "@myqsl/adif-codec";
 
 export const CORE_ADIF_FIELDS = new Set([
   "CALL",

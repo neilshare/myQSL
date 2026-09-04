@@ -1,4 +1,4 @@
-import { CardTemplateSchema, publicCardPath } from "@eqsr/domain";
+import { CardTemplateSchema, publicCardPath } from "@myqsl/domain";
 import { nanoid } from "nanoid";
 import { MediaStore } from "../../platform/r2";
 import { QsoRepository } from "../qsos/repository";

@@ -1,4 +1,4 @@
-import { parseAdif, serializeAdif, type AdifMetadata, type AdifRecord } from "@eqsr/adif-codec";
+import { parseAdif, serializeAdif, type AdifMetadata, type AdifRecord } from "@myqsl/adif-codec";
 
 type RequestMessage = { id: string; kind: "parse"; text: string } | { id: string; kind: "serialize"; records: AdifRecord[]; metadata: AdifMetadata } | { id: string; kind: "cancel" };
 const cancelled = new Set<string>();

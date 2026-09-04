@@ -121,7 +121,7 @@ async function runCli(): Promise<void> {
   const isDryRun = args.includes("--dry-run");
   const skipSecrets = args.includes("--skip-secrets") || process.env.SKIP_REMOTE_SECRETS === "1";
 
-  console.log("🔍 Checking eQSR production deployment preflight configuration...");
+  console.log("🔍 Checking myQSL production deployment preflight configuration...");
 
   let wranglerRaw = "";
   try {

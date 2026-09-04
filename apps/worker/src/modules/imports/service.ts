@@ -1,4 +1,4 @@
-import { QsoInputSchema } from "@eqsr/domain";
+import { QsoInputSchema } from "@myqsl/domain";
 import { nanoid } from "nanoid";
 import { StationRepository } from "../stations/repository";
 import { QsoRepository } from "../qsos/repository";

@@ -14,7 +14,7 @@ export const requireOwner: MiddlewareHandler<{
   const allowTestIdentity = (c.env.APP_ENV === "local" || (c.env as any).APP_ENV === "test") && c.env.TEST_AUTH_ENABLED === "1";
   if (!token) {
     if (allowTestIdentity) {
-      const testActor = c.req.header("X-EQSR-Test-Actor");
+      const testActor = c.req.header("X-MYQSL-Test-Actor") ?? c.req.header("X-EQSR-Test-Actor");
       if (testActor) {
         c.set("actor", testActor.slice(0, 160));
         await next();
