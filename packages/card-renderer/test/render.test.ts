@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { renderCard, type RenderInput } from "../src";
 
 const qso = { call: "BG4YYY", station_callsign: "BA4RC", qso_date: "20260903", time_on: "143000", band: "40M", mode: "SSB" };
@@ -30,7 +30,7 @@ describe("deterministic card renderer", () => {
   });
 
   it("draws background image when backgroundUrl is provided", async () => {
-    const calls: unknown[] = [];
+    const calls: any[] = [];
     const mockContext = {
       clearRect: (...args: unknown[]) => calls.push(["clearRect", ...args]),
       drawImage: (...args: unknown[]) => calls.push(["drawImage", ...args]),

@@ -32,13 +32,21 @@
     "ACCESS_AUD": "local-development-audience",
     "TEST_AUTH_ENABLED": "1"
   },
-  "observability": { "enabled": true }
-  ,"workflows": [
+  "observability": { "enabled": true },
+  "workflows": [
     {
       "name": "eqsr-d1-backup",
       "binding": "D1_BACKUP_WORKFLOW",
       "class_name": "D1BackupWorkflow",
       "schedules": ["0 20 * * *"]
     }
-  ]
+  ],
+  "env": {
+    "production": {
+      "vars": {
+        "APP_ENV": "production",
+        "TEST_AUTH_ENABLED": "0"
+      }
+    }
+  }
 }

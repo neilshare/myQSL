@@ -9,7 +9,7 @@ export function TemplateEditorPage() {
   const [baseHeight, setBaseHeight] = useState(848);
   const [backgroundFile, setBackgroundFile] = useState<File | null>(null);
   const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null);
-  const [template, setTemplate] = useState<CardTemplate>({
+  const [template] = useState<CardTemplate>({
     schema_version: 1,
     base_width: 1264,
     base_height: 848,
@@ -48,7 +48,7 @@ export function TemplateEditorPage() {
   });
 
   const [message, setMessage] = useState<string | null>(null);
-  const [savedRow, setSavedRow] = useState<CardTemplateRow | null>(null);
+  const [_savedRow, setSavedRow] = useState<CardTemplateRow | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleBackgroundChange = (e: React.ChangeEvent<HTMLInputElement>) => {

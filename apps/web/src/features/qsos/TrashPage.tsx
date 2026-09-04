@@ -12,7 +12,7 @@ export function TrashPage() {
       const list = Array.isArray(raw) ? raw : (Array.isArray((raw as any)?.data) ? (raw as any).data : []);
       const deleted = (list as QsoRecord[]).filter((r) => r.deleted_at != null);
       setRows(deleted);
-    } catch (e) {
+    } catch {
       setRows([]);
     }
   }, []);
