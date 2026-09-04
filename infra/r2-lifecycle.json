@@ -1,0 +1,26 @@
+{
+  "rules": [
+    {
+      "id": "delete-daily-backups-after-30-days",
+      "enabled": true,
+      "conditions": {
+        "prefix": "backups/daily/"
+      },
+      "action": {
+        "type": "Delete",
+        "maxAgeSeconds": 2592000
+      }
+    },
+    {
+      "id": "delete-monthly-backups-after-365-days",
+      "enabled": true,
+      "conditions": {
+        "prefix": "backups/monthly/"
+      },
+      "action": {
+        "type": "Delete",
+        "maxAgeSeconds": 31536000
+      }
+    }
+  ]
+}

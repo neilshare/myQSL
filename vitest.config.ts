@@ -10,6 +10,13 @@ export default defineConfig({
           include: ["packages/**/*.test.ts"]
         }
       },
+      {
+        test: {
+          name: "scripts",
+          environment: "node",
+          include: ["scripts/**/*.test.ts"]
+        }
+      },
       "./apps/web/vitest.config.ts",
       "./apps/worker/vitest.config.ts"
     ]
