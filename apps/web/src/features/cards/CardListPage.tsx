@@ -10,7 +10,9 @@ export function CardListPage() {
     setLoading(true);
     try {
       const res = await api.cards.list();
-      setCards((res.data as unknown as CardRow[]) ?? []);
+      const raw = res.data;
+      const list = Array.isArray(raw) ? raw : (Array.isArray((raw as any)?.data) ? (raw as any).data : []);
+      setCards(list);
     } catch {
       setCards([]);
     } finally {

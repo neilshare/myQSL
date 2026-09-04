@@ -8,8 +8,9 @@ export function TrashPage() {
   const loadTrash = useCallback(async () => {
     try {
       const result = await api.qsos.list("?include_deleted=true");
-      const list = (result.data as unknown as QsoRecord[]) ?? [];
-      const deleted = list.filter((r) => r.deleted_at != null);
+      const raw = result.data;
+      const list = Array.isArray(raw) ? raw : (Array.isArray((raw as any)?.data) ? (raw as any).data : []);
+      const deleted = (list as QsoRecord[]).filter((r) => r.deleted_at != null);
       setRows(deleted);
     } catch (e) {
       setRows([]);

@@ -19,6 +19,7 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
   };
   return <form onSubmit={submit} aria-label="QSO 表单">
     <label>对方呼号<input aria-label="对方呼号" value={value.call} onChange={(event) => setValue({ ...value, call: event.target.value })} required /></label>
+    <label>本台呼号<input aria-label="本台呼号" value={value.station_callsign} onChange={(event) => setValue({ ...value, station_callsign: event.target.value })} required /></label>
     <label>UTC 日期<input type="text" value={value.qso_date} onChange={(event) => setValue({ ...value, qso_date: event.target.value })} required /></label>
     <label>UTC 时间<input type="text" value={value.time_on} onChange={(event) => setValue({ ...value, time_on: event.target.value })} required /></label>
     <label>波段<input value={value.band} onChange={(event) => setValue({ ...value, band: event.target.value })} required /></label>

@@ -22,6 +22,7 @@ export function toQsoResponse(row: QsoRow) {
     adif_extra: JSON.parse(row.adif_extra_json),
     duplicate_ordinal: row.duplicate_ordinal,
     source: row.source,
-    version: row.version
+    version: row.version,
+    deleted_at: row.deleted_at
   };
 }

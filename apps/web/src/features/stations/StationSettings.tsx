@@ -26,7 +26,9 @@ export function StationSettings() {
   const loadStations = useCallback(async () => {
     try {
       const res = await api.stations.list();
-      setStations((res.data.data as Station[]) ?? []);
+      const raw = res.data;
+      const list = Array.isArray(raw) ? raw : (Array.isArray((raw as any)?.data) ? (raw as any).data : []);
+      setStations(list as Station[]);
     } catch {
       setStations([]);
     }

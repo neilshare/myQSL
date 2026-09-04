@@ -39,7 +39,8 @@ export async function lookupCards(call: string, qsoDate: string): Promise<Public
 
 export async function getPublicCard(publicId: string): Promise<PublicCardDetail> {
   const res = await fetch(`/api/v1/public/cards/${encodeURIComponent(publicId)}`, {
-    headers: { Accept: "application/json" }
+    headers: { Accept: "application/json" },
+    cache: "no-cache"
   });
   if (res.status === 410) {
     throw new Error("该 QSL 卡片已作废 (Voided)");

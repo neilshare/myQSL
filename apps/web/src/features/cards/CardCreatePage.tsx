@@ -17,13 +17,15 @@ export function CardCreatePage() {
 
   useEffect(() => {
     void api.qsos.list().then((res) => {
-      const data = (res.data as unknown as QsoRecord[]) ?? [];
+      const raw = res.data;
+      const data = Array.isArray(raw) ? raw : (Array.isArray((raw as any)?.data) ? (raw as any).data : []);
       setQsos(data);
       if (data.length > 0) setSelectedQsoId(data[0].id);
     }).catch(() => setQsos([]));
 
     void api.templates.list().then((res) => {
-      const data = (res.data as unknown as CardTemplateRow[]) ?? [];
+      const raw = res.data;
+      const data = Array.isArray(raw) ? raw : (Array.isArray((raw as any)?.data) ? (raw as any).data : []);
       setTemplates(data);
       if (data.length > 0) setSelectedTemplateId(data[0].id);
     }).catch(() => setTemplates([]));
@@ -44,7 +46,7 @@ export function CardCreatePage() {
         qso_id: selectedQsoId,
         template_id: selectedTemplateId,
       });
-      const card = draftRes.data;
+      const card = (draftRes.data as any)?.data ?? draftRes.data;
 
       // 2. Render to canvas
       setStatus("正在渲染高清卡片...");
@@ -88,7 +90,8 @@ export function CardCreatePage() {
       // 5. Publish card
       setStatus("正在发布卡片...");
       const publishedRes = await api.cards.publish(card.id);
-      setCreatedCard(publishedRes.data);
+      const published = (publishedRes.data as any)?.data ?? publishedRes.data;
+      setCreatedCard(published);
       setStatus("卡片已发布");
     } catch (err) {
       setError(err instanceof Error ? err.message : "制卡失败");

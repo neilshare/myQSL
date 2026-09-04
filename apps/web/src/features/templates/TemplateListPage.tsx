@@ -9,7 +9,9 @@ export function TemplateListPage() {
     setLoading(true);
     try {
       const res = await api.templates.list();
-      setTemplates((res.data as unknown as CardTemplateRow[]) ?? []);
+      const raw = res.data;
+      const list = Array.isArray(raw) ? raw : (Array.isArray((raw as any)?.data) ? (raw as any).data : []);
+      setTemplates(list);
     } catch {
       setTemplates([]);
     } finally {

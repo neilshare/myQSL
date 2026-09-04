@@ -6,6 +6,7 @@ export class TemplateService {
   constructor(private readonly repository: TemplateRepository, private readonly media: MediaStore, private readonly now: () => number = Date.now) {}
   async create(input: { name: string; layout: unknown }): Promise<TemplateRow> { const layout = CardTemplateSchema.parse(input.layout); return this.repository.create({ name: input.name.trim().slice(0, 120), layoutJson: JSON.stringify(layout), now: this.now() }); }
   list() { return this.repository.list(); }
+  get(id: number) { return this.repository.get(id); }
   async uploadBackground(templateId: number, body: ArrayBuffer, contentType: string): Promise<{ key: string; etag: string }> {
     if (body.byteLength > 8 * 1024 * 1024) throw new Error("Background exceeds 8 MiB");
     const bytes = new Uint8Array(body);

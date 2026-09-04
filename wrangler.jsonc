@@ -27,7 +27,7 @@
   ],
   "vars": {
     "APP_ENV": "local",
-    "PUBLIC_ORIGIN": "http://localhost:8787",
+    "PUBLIC_ORIGIN": "http://127.0.0.1:8787",
     "ACCESS_TEAM_DOMAIN": "https://eqsr.cloudflareaccess.com",
     "ACCESS_AUD": "local-development-audience",
     "TEST_AUTH_ENABLED": "1"
