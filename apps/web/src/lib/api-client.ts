@@ -21,6 +21,7 @@ export const api = {
   },
   imports: {
     createJob: (input: Record<string, unknown>) => apiFetch<{ id: string }>("/api/v1/imports", { method: "POST", body: JSON.stringify(input) }).then((result) => result.data),
-    uploadChunk: (id: string, input: Record<string, unknown>) => apiFetch(`/api/v1/imports/${id}/chunks`, { method: "POST", body: JSON.stringify(input) }).then((result) => result.data)
+    uploadChunk: (id: string, input: Record<string, unknown>) => apiFetch(`/api/v1/imports/${id}/chunks`, { method: "POST", body: JSON.stringify(input) }).then((result) => result.data),
+    completeJob: (id: string) => apiFetch<{ id: string; status: string }>(`/api/v1/imports/${id}/complete`, { method: "POST" }).then((result) => result.data)
   }
 };

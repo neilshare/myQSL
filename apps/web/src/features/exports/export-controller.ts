@@ -1,4 +1,5 @@
 import { serializeAdif, type AdifRecord } from "@eqsr/adif-codec";
+import { qsoToAdifRecord } from "../imports/adif-mapper";
 
 export async function exportAdif(api: { list: (cursor?: string) => Promise<{ data: Array<Record<string, unknown>>; next_cursor: string | null }> }): Promise<string> {
   const records: AdifRecord[] = [];
@@ -6,9 +7,7 @@ export async function exportAdif(api: { list: (cursor?: string) => Promise<{ dat
   do {
     const page = await api.list(cursor);
     for (const row of page.data) {
-      const fields: Record<string, string> = {};
-      for (const [key, value] of Object.entries(row)) if (value !== null && value !== undefined && ["id", "version", "qso_at", "duplicate_ordinal", "source"].includes(key) === false) fields[key.toUpperCase()] = String(value);
-      records.push({ fields, types: {} });
+      records.push(qsoToAdifRecord(row));
     }
     cursor = page.next_cursor ?? undefined;
   } while (cursor);
