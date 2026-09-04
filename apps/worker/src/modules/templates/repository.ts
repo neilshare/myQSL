@@ -17,4 +17,13 @@ export class TemplateRepository {
     if (!result.meta.changes) return null;
     return this.get(id);
   }
+  async setBackground(id: number, key: string, sha256: string, now: number): Promise<TemplateRow | null> {
+    const result = await this.db
+      .prepare(
+        "UPDATE card_templates SET background_r2_key = ?, background_sha256 = ?, version = version + 1, updated_at = ? WHERE id = ?"
+      )
+      .bind(key, sha256, now, id)
+      .run();
+    return result.meta.changes ? this.get(id) : null;
+  }
 }

@@ -10,4 +10,43 @@ describe("template API", () => {
     const valid = await exports.default.fetch("https://example.test/api/v1/card-templates", { method: "POST", headers, body: JSON.stringify({ name: "clean", schema_version: 1, base_width: 1264, base_height: 848, elements: [{ type: "text", x: 0.5, y: 0.5, field: "call" }] }) });
     expect(valid.status).toBe(201);
   });
+
+  it("persists background R2 key, sha256, and increments version upon background upload", async () => {
+    const createRes = await exports.default.fetch("https://example.test/api/v1/card-templates", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ name: "bg-test", schema_version: 1, base_width: 1264, base_height: 848, elements: [] })
+    });
+    expect(createRes.status).toBe(201);
+    const created = ((await createRes.json()) as { data: { id: number; version: number } }).data;
+    expect(created.version).toBe(1);
+
+    // Upload a valid PNG (starts with [137, 80, 78, 71, 13, 10, 26, 10])
+    const pngBytes = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 1, 2, 3]);
+    const uploadRes = await exports.default.fetch(`https://example.test/api/v1/card-templates/${created.id}/background`, {
+      method: "POST",
+      headers: {
+        "X-EQSR-Test-Actor": "owner",
+        Origin: "http://localhost:8787",
+        "X-EQSR-Request": "1",
+        "Content-Type": "image/png"
+      },
+      body: pngBytes
+    });
+    expect(uploadRes.status).toBe(201);
+
+    // List templates and verify the row has background_r2_key, background_sha256, and version = 2
+    const listRes = await exports.default.fetch("https://example.test/api/v1/card-templates", {
+      method: "GET",
+      headers
+    });
+    expect(listRes.status).toBe(200);
+    const listData = ((await listRes.json()) as { data: Array<{ id: number; background_r2_key: string | null; background_sha256: string | null; version: number }> }).data;
+    const target = listData.find((t) => t.id === created.id);
+    expect(target).toBeDefined();
+    expect(target?.background_r2_key).toBeTruthy();
+    expect(target?.background_r2_key).toContain(`templates/${created.id}/`);
+    expect(target?.background_sha256).toBeTruthy();
+    expect(target?.version).toBe(2);
+  });
 });

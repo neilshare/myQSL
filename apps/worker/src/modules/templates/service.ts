@@ -16,6 +16,8 @@ export class TemplateService {
     const hash = [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
     const ext = isPng ? "png" : "jpg";
     const result = await this.media.putImmutable(`templates/${templateId}/${hash}.${ext}`, body, contentType);
+    const row = await this.repository.setBackground(templateId, result.key, hash, this.now());
+    if (!row) throw new Error("Template not found");
     return { key: result.key, etag: result.etag };
   }
 }
