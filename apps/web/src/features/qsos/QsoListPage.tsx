@@ -1,11 +1,11 @@
 import { useEffect, useState, useCallback } from "react";
-import { api } from "../../lib/api-client";
+import { api, type QsoRecord } from "../../lib/api-client";
 import { QsoForm } from "./QsoForm";
-import { QsoFilters, QsoFilterValues } from "./QsoFilters";
+import { QsoFilters, type QsoFilterValues } from "./QsoFilters";
 import { ExportButton } from "../exports/ExportButton";
 
 export function QsoListPage() {
-  const [rows, setRows] = useState<Array<Record<string, unknown>>>([]);
+  const [rows, setRows] = useState<QsoRecord[]>([]);
   const [filters, setFilters] = useState<QsoFilterValues>({});
 
   const loadQsos = useCallback(async (currentFilters: QsoFilterValues) => {
@@ -18,7 +18,7 @@ export function QsoListPage() {
     const queryString = params.toString() ? `?${params.toString()}` : "";
     try {
       const result = await api.qsos.list(queryString);
-      setRows((result.data as Array<Record<string, unknown>>) ?? []);
+      setRows((result.data as unknown as QsoRecord[]) ?? []);
     } catch {
       setRows([]);
     }
@@ -32,9 +32,9 @@ export function QsoListPage() {
     setFilters(newFilters);
   };
 
-  const handleDelete = async (row: Record<string, unknown>) => {
+  const handleDelete = async (row: QsoRecord) => {
     if (!row.id) return;
-    const etag = typeof row.etag === "string" ? row.etag : `"${row.version ?? 1}"`;
+    const etag = `"${row.version ?? 1}"`;
     try {
       await api.qsos.delete(Number(row.id), etag);
       void loadQsos(filters);

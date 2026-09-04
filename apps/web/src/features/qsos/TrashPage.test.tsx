@@ -25,7 +25,7 @@ describe("TrashPage", () => {
     } as any);
 
     const restoreSpy = vi.spyOn(api.qsos, "restore").mockResolvedValue({
-      data: { id: 42, deleted_at: null },
+      data: { id: 42, deleted_at: null } as any,
       etag: null
     });
 

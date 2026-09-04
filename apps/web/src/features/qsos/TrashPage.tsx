@@ -1,14 +1,14 @@
 import { useEffect, useState, useCallback } from "react";
-import { api } from "../../lib/api-client";
+import { api, type QsoRecord } from "../../lib/api-client";
 
 export function TrashPage() {
-  const [rows, setRows] = useState<Array<Record<string, unknown>>>([]);
+  const [rows, setRows] = useState<QsoRecord[]>([]);
   const [message, setMessage] = useState<string | null>(null);
 
   const loadTrash = useCallback(async () => {
     try {
       const result = await api.qsos.list("?include_deleted=true");
-      const list = (result.data as Array<Record<string, unknown>>) ?? [];
+      const list = (result.data as unknown as QsoRecord[]) ?? [];
       const deleted = list.filter((r) => r.deleted_at != null);
       setRows(deleted);
     } catch (e) {

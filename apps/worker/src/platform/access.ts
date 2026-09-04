@@ -2,12 +2,13 @@ import { createRemoteJWKSet, jwtVerify } from "jose";
 import type { MiddlewareHandler } from "hono";
 import type { Env } from "../env";
 import { problem, Problems } from "./problem";
+import type { RequestVariables } from "./request-context";
 
 const jwksByTeam = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
 
 export const requireOwner: MiddlewareHandler<{
   Bindings: Env;
-  Variables: { actor: string; requestId?: string };
+  Variables: RequestVariables;
 }> = async (c, next) => {
   const token = c.req.header("Cf-Access-Jwt-Assertion");
   if (!token) {

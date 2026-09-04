@@ -3,7 +3,7 @@ import { recordToQso } from "./adif-mapper";
 
 type ImportApi = {
   createJob: (input: Record<string, unknown>) => Promise<{ id: string }>;
-  uploadChunk: (jobId: string, input: { chunk_index: number; [key: string]: unknown }) => Promise<unknown>;
+  uploadChunk: (jobId: string, input: { chunk_index: number; records: unknown[]; [key: string]: unknown }) => Promise<unknown>;
   completeJob?: (jobId: string) => Promise<unknown>;
 };
 type ImportOptions = { chunkSize?: number; concurrency?: number; session?: boolean };

@@ -13,4 +13,7 @@ export interface Env {
   CLOUDFLARE_ACCOUNT_ID?: string;
   D1_DATABASE_ID?: string;
   D1_BACKUP_WORKFLOW: Workflow<BackupParams>;
+  RATE_LIMIT_SALT?: string;
+  TEST_AUTH_ENABLED?: string;
 }
+
