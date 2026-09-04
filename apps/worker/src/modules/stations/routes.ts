@@ -5,6 +5,7 @@ import type { RequestVariables } from "../../platform/request-context";
 import { problem } from "../../platform/problem";
 import { StationRepository } from "./repository";
 import { StationService } from "./service";
+import { AuditWriter } from "../../platform/audit";
 
 const idSchema = z.coerce.number().int().positive();
 const stationInput = z.object({
@@ -33,6 +34,16 @@ export function registerStationRoutes(app: Hono<{ Bindings: Env; Variables: Requ
     try {
       const service = new StationService(new StationRepository(c.env.DB));
       const created = await service.create(stationInput.parse(await c.req.json()));
+      const audit = new AuditWriter(c.env.DB);
+      await audit.append({
+        actor: c.get("actor") ?? "unknown",
+        action: "create_station",
+        entity: "station",
+        entityId: String(created.id),
+        requestId: c.get("requestId") ?? "unknown",
+        detail: { callsign: created.callsign },
+        createdAt: Date.now()
+      });
       return c.json({ data: created }, 201);
     } catch (error) {
       return jsonError(error, c.req.path);
@@ -46,6 +57,16 @@ export function registerStationRoutes(app: Hono<{ Bindings: Env; Variables: Requ
       const service = new StationService(new StationRepository(c.env.DB));
       const updated = await service.update(id.data, version, stationInput.parse(await c.req.json()));
       if (!updated) return problem(412, "https://eqsr.app/problems/stale", "Stale version", "The station changed since it was read", c.req.path);
+      const audit = new AuditWriter(c.env.DB);
+      await audit.append({
+        actor: c.get("actor") ?? "unknown",
+        action: "update_station",
+        entity: "station",
+        entityId: String(updated.id),
+        requestId: c.get("requestId") ?? "unknown",
+        detail: { callsign: updated.callsign },
+        createdAt: Date.now()
+      });
       c.header("ETag", `W/"station-${updated.id}-${updated.version}"`);
       return c.json({ data: updated });
     } catch (error) {

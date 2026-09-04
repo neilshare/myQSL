@@ -1,6 +1,3 @@
-import type { AppDatabase } from "./db";
-import { auditEvents } from "./schema";
-
 export interface AuditEventInput {
   actor: string;
   action: string;
@@ -12,19 +9,46 @@ export interface AuditEventInput {
   createdAt: number;
 }
 
+export function sanitizeAuditDetail(detail: Record<string, unknown> = {}): Record<string, unknown> {
+  const sanitized: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(detail)) {
+    if (/token|secret|password|auth|private_key/i.test(key)) {
+      sanitized[key] = "[REDACTED]";
+    } else if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+      sanitized[key] = sanitizeAuditDetail(value as Record<string, unknown>);
+    } else {
+      sanitized[key] = value;
+    }
+  }
+  return sanitized;
+}
+
+export function buildAuditStatement(db: D1Database, event: AuditEventInput): D1PreparedStatement {
+  const detailJson = JSON.stringify(sanitizeAuditDetail(event.detail ?? {}));
+  return db
+    .prepare(
+      "INSERT INTO audit_events (actor, action, entity, entity_id, request_id, detail_json, ip_hash, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+    )
+    .bind(
+      event.actor,
+      event.action,
+      event.entity,
+      event.entityId ?? null,
+      event.requestId,
+      detailJson,
+      event.ipHash ?? null,
+      event.createdAt
+    );
+}
+
 export class AuditWriter {
-  constructor(private readonly db: AppDatabase) {}
+  constructor(private readonly db: D1Database) {}
+
+  buildStatement(event: AuditEventInput): D1PreparedStatement {
+    return buildAuditStatement(this.db, event);
+  }
 
   async append(event: AuditEventInput): Promise<void> {
-    await this.db.insert(auditEvents).values({
-      actor: event.actor,
-      action: event.action,
-      entity: event.entity,
-      entityId: event.entityId,
-      requestId: event.requestId,
-      detailJson: JSON.stringify(event.detail ?? {}),
-      ipHash: event.ipHash,
-      createdAt: event.createdAt
-    });
+    await this.buildStatement(event).run();
   }
 }

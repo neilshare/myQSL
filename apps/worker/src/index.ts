@@ -20,6 +20,14 @@ app.use("*", requestContext);
 app.use("*", securityHeaders);
 
 app.get("/healthz", (c) => c.json({ status: "ok" }, 200, { "Cache-Control": "no-store" }));
+app.get("/readyz", requireOwner, async (c) => {
+  try {
+    await c.env.DB.prepare("SELECT 1").first();
+    return c.json({ status: "ready", d1: "connected" }, 200, { "Cache-Control": "no-store" });
+  } catch {
+    return c.json({ status: "not_ready", error: "Database unreachable" }, 503, { "Cache-Control": "no-store" });
+  }
+});
 
 app.use("/api/v1/qsos", requireSameOrigin);
 app.use("/api/v1/qsos", requireOwner);

@@ -8,6 +8,7 @@ import { StationRepository } from "../stations/repository";
 import { QsoRepository } from "./repository";
 import { DuplicateQsoError, QsoNotFoundError, QsoService } from "./service";
 import { toQsoResponse } from "./mapper";
+import { AuditWriter } from "../../platform/audit";
 
 const idSchema = z.coerce.number().int().positive();
 const listSchema = z.object({
@@ -30,6 +31,16 @@ export function registerQsoRoutes(app: Hono<{ Bindings: Env; Variables: RequestV
     try {
       const body = await c.req.json() as Record<string, unknown>;
       const result = await service(c).create(QsoInputSchema.parse(body), { preserve_duplicate: body.preserve_duplicate === true, duplicate_reason: typeof body.duplicate_reason === "string" ? body.duplicate_reason : undefined });
+      const audit = new AuditWriter(c.env.DB);
+      await audit.append({
+        actor: c.get("actor") ?? "unknown",
+        action: "create_qso",
+        entity: "qso",
+        entityId: String(result.qso.id),
+        requestId: c.get("requestId") ?? "unknown",
+        detail: { call: result.qso.call, band: result.qso.band, mode: result.qso.mode },
+        createdAt: Date.now()
+      });
       c.header("ETag", etag(result.qso));
       return c.json({ data: toQsoResponse(result.qso) }, 201);
     } catch (error) {

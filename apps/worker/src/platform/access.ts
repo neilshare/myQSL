@@ -11,8 +11,9 @@ export const requireOwner: MiddlewareHandler<{
   Variables: RequestVariables;
 }> = async (c, next) => {
   const token = c.req.header("Cf-Access-Jwt-Assertion");
+  const allowTestIdentity = (c.env.APP_ENV === "local" || (c.env as any).APP_ENV === "test") && c.env.TEST_AUTH_ENABLED === "1";
   if (!token) {
-    if (c.env.APP_ENV === "local") {
+    if (allowTestIdentity) {
       const testActor = c.req.header("X-EQSR-Test-Actor");
       if (testActor) {
         c.set("actor", testActor.slice(0, 160));
