@@ -36,5 +36,25 @@ export class CardService {
     if (current?.status !== "draft") throw new CardStateError("Card is not in draft state");
     const row = await this.repository.attach(cardId, result.key, hash, this.now()); if (!row || row.status === "draft") throw new CardStateError("Card is not in draft state"); return row;
   }
-  async publish(cardId: string): Promise<CardRow> { const row = await this.repository.publish(cardId, this.now()); if (!row || row.status !== "published") throw new CardStateError("Card must be ready before publishing"); return row; }
+  async publish(cardId: string): Promise<CardRow> {
+    const current = await this.repository.get(cardId);
+    if (!current) throw new CardStateError("Card not found");
+    if (current.status === "published") return current;
+    if (current.status !== "ready") throw new CardStateError("Card must be ready before publishing");
+    const row = await this.repository.publish(cardId, this.now());
+    if (!row || row.status !== "published") throw new CardStateError("Card must be ready before publishing");
+    return row;
+  }
+  async void(cardId: string): Promise<CardRow> {
+    const current = await this.repository.get(cardId);
+    if (!current) throw new CardStateError("Card not found");
+    if (current.status === "void") return current;
+    if (current.status !== "published") throw new CardStateError("Only published cards can be voided");
+    const row = await this.repository.void(cardId, this.now());
+    if (!row || row.status !== "void") throw new CardStateError("Card cannot be voided");
+    return row;
+  }
+  async list(cursor?: { created_at: number; id: string }, limit = 50): Promise<CardRow[]> {
+    return this.repository.list(cursor, limit);
+  }
 }

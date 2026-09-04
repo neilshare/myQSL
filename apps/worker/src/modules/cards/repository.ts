@@ -72,16 +72,31 @@ export class CardRepository {
     return this.get(id);
   }
   async void(id: string, now: number): Promise<CardRow | null> {
-    await this.db
+    const result = await this.db
       .prepare("UPDATE qsl_cards SET status = 'void', voided_at = ?, updated_at = ? WHERE id = ? AND status = 'published'")
       .bind(now, now, id)
       .run();
+    if (!result.meta.changes) return null;
     return this.get(id);
   }
   async lookup(call: string, qsoDate: string): Promise<CardRow[]> {
     const result = await this.db
       .prepare("SELECT * FROM qsl_cards WHERE status = 'published' AND lookup_call = ? AND lookup_qso_date = ? ORDER BY published_at DESC")
       .bind(call, qsoDate)
+      .all<CardRow>();
+    return result.results;
+  }
+  async list(cursor?: { created_at: number; id: string }, limit = 50): Promise<CardRow[]> {
+    const clauses: string[] = [];
+    const params: Array<string | number> = [];
+    if (cursor) {
+      clauses.push("(created_at < ? OR (created_at = ? AND id < ?))");
+      params.push(cursor.created_at, cursor.created_at, cursor.id);
+    }
+    const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+    const result = await this.db
+      .prepare(`SELECT * FROM qsl_cards ${where} ORDER BY created_at DESC, id DESC LIMIT ?`)
+      .bind(...params, limit)
       .all<CardRow>();
     return result.results;
   }
