@@ -3,8 +3,10 @@ import { api, type QsoRecord } from "../../lib/api-client";
 import { QsoForm } from "./QsoForm";
 import { QsoFilters, type QsoFilterValues } from "./QsoFilters";
 import { ExportButton } from "../exports/ExportButton";
+import { useI18n } from "../../lib/i18n";
 
 export function QsoListPage() {
+  const { t } = useI18n();
   const [rows, setRows] = useState<QsoRecord[]>([]);
   const [filters, setFilters] = useState<QsoFilterValues>({});
   const [editingRow, setEditingRow] = useState<QsoRecord | null>(null);
@@ -49,17 +51,17 @@ export function QsoListPage() {
   return (
     <section>
       <header className="page-header">
-        <h2>QSO 日志</h2>
+        <h2>{t("qsos.title")}</h2>
         <ExportButton />
       </header>
 
       <div className="card-section" style={{ marginBottom: "1.25rem" }}>
-        <h3 style={{ marginTop: 0, marginBottom: "0.75rem", fontSize: "1.1rem" }}>🔍 日志筛选</h3>
+        <h3 style={{ marginTop: 0, marginBottom: "0.75rem", fontSize: "1.1rem" }}>{t("qsos.filterTitle")}</h3>
         <QsoFilters onFilter={handleFilter} />
       </div>
 
       <div className="card-section" style={{ marginBottom: "1.5rem" }}>
-        <h3 style={{ marginTop: 0, marginBottom: "0.75rem", fontSize: "1.1rem" }}>✍️ 录入新通联</h3>
+        <h3 style={{ marginTop: 0, marginBottom: "0.75rem", fontSize: "1.1rem" }}>{t("qsos.createTitle")}</h3>
         <QsoForm
           initial={{ call: "", station_callsign: "BI1ABC", qso_date: "", time_on: "", band: "", mode: "" }}
           api={api.qsos}
@@ -71,16 +73,16 @@ export function QsoListPage() {
         <div
           className="edit-modal"
           role="dialog"
-          aria-label="编辑 QSO"
+          aria-label={t("qsos.editTitle")}
           style={{
             margin: "1rem 0",
             padding: "1.25rem",
-            border: "2px solid var(--accent-primary, #2563eb)",
+            border: "2px solid var(--accent-primary)",
             borderRadius: "10px",
-            background: "var(--bg-card, #1c2541)"
+            background: "var(--bg-card)"
           }}
         >
-          <h3 style={{ marginTop: 0 }}>编辑 QSO #{editingRow.id}</h3>
+          <h3 style={{ marginTop: 0 }}>{t("qsos.editTitle")} #{editingRow.id}</h3>
           <QsoForm
             initial={{
               id: editingRow.id,
@@ -105,14 +107,14 @@ export function QsoListPage() {
             onClick={() => setEditingRow(null)}
             style={{ marginTop: "1rem" }}
           >
-            取消编辑
+            {t("qsos.cancelEdit")}
           </button>
         </div>
       )}
 
       <div className="qso-list">
         {rows.length === 0 ? (
-          <p style={{ color: "var(--text-muted)", textAlign: "center", padding: "2rem" }}>暂无通联记录</p>
+          <p style={{ color: "var(--text-muted)", textAlign: "center", padding: "2rem" }}>{t("qsos.empty")}</p>
         ) : (
           rows.map((row, index) => (
             <article key={String(row.id ?? index)}>
@@ -121,8 +123,9 @@ export function QsoListPage() {
                 <span style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>{String(row.qso_date)} {String(row.time_on)} UTC</span>
                 <span
                   style={{
-                    background: "rgba(59, 130, 246, 0.15)",
-                    color: "#93c5fd",
+                    background: "var(--badge-bg)",
+                    color: "var(--badge-text)",
+                    border: "1px solid var(--badge-border)",
                     padding: "2px 8px",
                     borderRadius: "4px",
                     fontSize: "0.85rem",
@@ -134,10 +137,10 @@ export function QsoListPage() {
               </div>
               <div className="qso-actions">
                 <button type="button" className="btn-secondary" onClick={() => setEditingRow(row)}>
-                  编辑
+                  {t("common.edit")}
                 </button>
                 <button type="button" className="btn-danger" onClick={() => void handleDelete(row)}>
-                  删除
+                  {t("common.delete")}
                 </button>
               </div>
             </article>

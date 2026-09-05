@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { exportAdif } from "./export-controller";
 import { api } from "../../lib/api-client";
+import { useI18n } from "../../lib/i18n";
 
 export function ExportButton() {
+  const { locale, t } = useI18n();
   const [exporting, setExporting] = useState(false);
 
   const handleExport = async () => {
@@ -19,7 +21,7 @@ export function ExportButton() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "导出失败");
+      alert(err instanceof Error ? err.message : (locale === "zh" ? "导出失败" : "Export failed"));
     } finally {
       setExporting(false);
     }
@@ -32,7 +34,7 @@ export function ExportButton() {
       disabled={exporting}
       style={{
         padding: "8px 16px",
-        backgroundColor: "#059669",
+        backgroundColor: "var(--success, #059669)",
         color: "white",
         border: "none",
         borderRadius: "6px",
@@ -40,7 +42,7 @@ export function ExportButton() {
         cursor: exporting ? "not-allowed" : "pointer"
       }}
     >
-      {exporting ? "正在导出..." : "导出 ADIF"}
+      {exporting ? (locale === "zh" ? "正在导出..." : "Exporting...") : t("qsos.exportAdif")}
     </button>
   );
 }

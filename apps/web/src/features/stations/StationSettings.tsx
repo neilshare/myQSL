@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { api } from "../../lib/api-client";
+import { useI18n } from "../../lib/i18n";
 
 interface Station {
   id: number;
@@ -16,6 +17,7 @@ interface Station {
 }
 
 export function StationSettings() {
+  const { t, locale } = useI18n();
   const [stations, setStations] = useState<Station[]>([]);
   const [callsign, setCallsign] = useState("");
   const [operator, setOperator] = useState("");
@@ -47,48 +49,54 @@ export function StationSettings() {
         grid_square: grid.trim() ? grid.trim().toUpperCase() : null,
         is_default: isDefault,
       });
-      setMessage("台站已保存");
+      setMessage(locale === "zh" ? "台站已保存" : "Station saved");
       setCallsign("");
       setOperator("");
       setGrid("");
       setIsDefault(false);
       void loadStations();
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "保存失败");
+      setMessage(err instanceof Error ? err.message : (locale === "zh" ? "保存失败" : "Save failed"));
     }
   };
 
+  const callsignLabel = locale === "zh" ? "本台呼号" : t("stations.callsign");
+  const operatorLabel = locale === "zh" ? "操作员呼号" : t("stations.operator");
+  const gridLabel = locale === "zh" ? "网格坐标" : t("stations.grid");
+  const isDefaultLabel = locale === "zh" ? "设为默认台站" : t("stations.isDefault");
+  const addBtnLabel = locale === "zh" ? "添加台站" : t("stations.addBtn");
+
   return (
     <section>
-      <h2>台站设置</h2>
-      <p>管理默认台站和操作员信息。</p>
-      {message && <output role="status">{message}</output>}
+      <h2>{t("stations.title")}</h2>
+      <p style={{ color: "var(--text-muted)" }}>{t("stations.subtitle")}</p>
+      {message && <output role="status" style={{ color: "var(--success)" }}>{message}</output>}
 
-      <form onSubmit={handleSubmit} aria-label="台站设置表单" style={{ display: "grid", gap: "1rem" }}>
+      <form onSubmit={handleSubmit} aria-label={locale === "zh" ? "台站设置表单" : "Station Settings Form"} style={{ display: "grid", gap: "1rem" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
           <label>
-            本台呼号
+            {callsignLabel}
             <input
               value={callsign}
               onChange={(e) => setCallsign(e.target.value)}
-              placeholder="例如 BI1ABC"
+              placeholder="BI1ABC"
               required
             />
           </label>
           <label>
-            操作员呼号
+            {operatorLabel}
             <input
               value={operator}
               onChange={(e) => setOperator(e.target.value)}
-              placeholder="例如 BI1ABC"
+              placeholder="BI1ABC"
             />
           </label>
           <label>
-            网格坐标
+            {gridLabel}
             <input
               value={grid}
               onChange={(e) => setGrid(e.target.value)}
-              placeholder="例如 OM89xx"
+              placeholder="OM89xx"
             />
           </label>
         </div>
@@ -102,15 +110,15 @@ export function StationSettings() {
             onChange={(e) => setIsDefault(e.target.checked)}
             style={{ width: "1.25rem", height: "1.25rem", minHeight: "1.25rem" }}
           />
-          <span>设为默认台站</span>
+          <span>{isDefaultLabel}</span>
         </label>
-        <button type="submit" style={{ maxWidth: "240px" }}>添加台站</button>
+        <button type="submit" style={{ maxWidth: "240px" }}>{addBtnLabel}</button>
       </form>
 
       <div className="station-list" style={{ display: "grid", gap: "0.75rem", marginTop: "1.5rem" }}>
-        <h3>现有台站</h3>
+        <h3>{t("stations.existing")}</h3>
         {stations.length === 0 ? (
-          <p>暂无台站配置</p>
+          <p style={{ color: "var(--text-muted)" }}>{t("stations.empty")}</p>
         ) : (
           stations.map((s) => (
             <article
@@ -131,12 +139,12 @@ export function StationSettings() {
                 <strong style={{ fontSize: "1.1rem" }}>{s.callsign}</strong>
                 {s.operator_callsign && (
                   <span style={{ color: "var(--text-muted)", marginLeft: "0.75rem" }}>
-                    操作员: {s.operator_callsign}
+                    {locale === "zh" ? "操作员: " : "Operator: "}{s.operator_callsign}
                   </span>
                 )}
                 {s.grid_square && (
                   <span style={{ color: "var(--text-muted)", marginLeft: "0.75rem" }}>
-                    网格: {s.grid_square}
+                    {locale === "zh" ? "网格: " : "Grid: "}{s.grid_square}
                   </span>
                 )}
               </div>
@@ -144,7 +152,7 @@ export function StationSettings() {
                 <span
                   style={{
                     background: "rgba(16, 185, 129, 0.15)",
-                    color: "#34d399",
+                    color: "var(--success, #34d399)",
                     padding: "2px 8px",
                     borderRadius: "9999px",
                     fontSize: "0.8rem",
@@ -152,7 +160,7 @@ export function StationSettings() {
                     border: "1px solid rgba(16, 185, 129, 0.3)"
                   }}
                 >
-                  (默认)
+                  {locale === "zh" ? "(默认)" : "(Default)"}
                 </span>
               )}
             </article>

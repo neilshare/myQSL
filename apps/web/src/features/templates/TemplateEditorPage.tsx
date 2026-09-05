@@ -2,11 +2,13 @@ import React, { useState, useEffect, useRef } from "react";
 import { api, type CardTemplateRow } from "../../lib/api-client";
 import { CanvasPreview } from "./CanvasPreview";
 import type { CardTemplate } from "@myqsl/domain";
+import { useI18n } from "../../lib/i18n";
 
 export function TemplateEditorPage() {
+  const { t, locale } = useI18n();
   const [templateId, setTemplateId] = useState<number | null>(null);
   const [version, setVersion] = useState<number>(1);
-  const [name, setName] = useState("标准卡片模板");
+  const [name, setName] = useState(locale === "zh" ? "标准卡片模板" : "Standard Card Template");
   const [baseWidth, setBaseWidth] = useState(1264);
   const [baseHeight, setBaseHeight] = useState(848);
   const [backgroundFile, setBackgroundFile] = useState<File | null>(null);
@@ -83,12 +85,12 @@ export function TemplateEditorPage() {
         }
       })
       .catch((err) => {
-        setMessage(err instanceof Error ? err.message : "加载模板失败");
+        setMessage(err instanceof Error ? err.message : (locale === "zh" ? "加载模板失败" : "Failed to load template"));
       })
       .finally(() => {
         setLoading(false);
       });
-  }, []);
+  }, [locale]);
 
   const backgroundUrlRef = useRef<string | null>(null);
 
@@ -116,7 +118,7 @@ export function TemplateEditorPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      setMessage("正在保存模板...");
+      setMessage(locale === "zh" ? "正在保存模板..." : "Saving template...");
       const updatedLayout: CardTemplate = {
         ...template,
         base_width: baseWidth,
@@ -134,10 +136,10 @@ export function TemplateEditorPage() {
         setVersion(updated.version);
 
         if (backgroundFile) {
-          setMessage("正在上传模板底图...");
+          setMessage(locale === "zh" ? "正在上传模板底图..." : "Uploading background image...");
           await api.templates.uploadBackground(updated.id, backgroundFile, backgroundFile.type);
         }
-        setMessage("模板已成功更新！");
+        setMessage(locale === "zh" ? "模板已成功更新！" : "Template updated successfully!");
       } else {
         const res = await api.templates.create({
           name,
@@ -149,34 +151,34 @@ export function TemplateEditorPage() {
         setVersion(created.version);
 
         if (backgroundFile) {
-          setMessage("正在上传模板底图...");
+          setMessage(locale === "zh" ? "正在上传模板底图..." : "Uploading background image...");
           await api.templates.uploadBackground(created.id, backgroundFile, backgroundFile.type);
         }
-        setMessage("模板已成功保存！");
+        setMessage(locale === "zh" ? "模板已成功保存！" : "Template saved successfully!");
       }
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "保存失败");
+      setMessage(err instanceof Error ? err.message : (locale === "zh" ? "保存失败" : "Failed to save"));
     }
   };
 
   if (loading) {
-    return <section><p style={{ color: "var(--text-muted)" }}>正在加载模板数据...</p></section>;
+    return <section><p style={{ color: "var(--text-muted)" }}>{locale === "zh" ? "正在加载模板数据..." : "Loading template data..."}</p></section>;
   }
 
   return (
     <section>
-      <h2>{templateId ? `编辑模板 (v${version})` : "新建模板"}</h2>
-      <p>使用规范化坐标布置呼号、日期和二维码，并配置卡片底图。</p>
-      {message && <output role="status">{message}</output>}
+      <h2>{templateId ? (locale === "zh" ? `编辑模板 (v${version})` : `Edit Template (v${version})`) : (locale === "zh" ? "新建模板" : "New Template")}</h2>
+      <p style={{ color: "var(--text-muted)" }}>{locale === "zh" ? "使用规范化坐标布置呼号、日期和二维码，并配置卡片底图。" : "Position callsign, date, and QR code using normalized coordinates, and configure background image."}</p>
+      {message && <output role="status" style={{ color: "var(--accent-primary)" }}>{message}</output>}
 
       <form onSubmit={handleSave} style={{ display: "grid", gap: "1rem", margin: "1rem 0" }}>
         <label>
-          模板名称:
+          {t("templates.name")}:
           <input value={name} onChange={(e) => setName(e.target.value)} required />
         </label>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "1rem" }}>
           <label>
-            宽度 (px):
+            {locale === "zh" ? "宽度 (px):" : "Width (px):"}
             <input
               type="number"
               value={baseWidth}
@@ -185,7 +187,7 @@ export function TemplateEditorPage() {
             />
           </label>
           <label>
-            高度 (px):
+            {locale === "zh" ? "高度 (px):" : "Height (px):"}
             <input
               type="number"
               value={baseHeight}
@@ -196,7 +198,7 @@ export function TemplateEditorPage() {
         </div>
 
         <label>
-          模板底图 (PNG/JPEG):
+          {t("templates.bgImage")} (PNG/JPEG):
           <input
             ref={fileInputRef}
             type="file"
@@ -205,11 +207,11 @@ export function TemplateEditorPage() {
           />
         </label>
 
-        <button type="submit">{templateId ? "更新模板" : "保存模板"}</button>
+        <button type="submit">{templateId ? (locale === "zh" ? "更新模板" : "Update Template") : t("templates.saveTemplate")}</button>
       </form>
 
       <div className="preview-container" style={{ marginTop: "1.5rem" }}>
-        <h3>实时排版预览</h3>
+        <h3>{locale === "zh" ? "实时排版预览" : "Live Layout Preview"}</h3>
         <CanvasPreview
           template={{ ...template, base_width: baseWidth, base_height: baseHeight }}
           backgroundUrl={backgroundUrl}
@@ -226,4 +228,3 @@ export function TemplateEditorPage() {
     </section>
   );
 }
-

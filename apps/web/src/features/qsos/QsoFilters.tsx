@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useI18n } from "../../lib/i18n";
 
 export interface QsoFilterValues {
   call?: string;
@@ -9,6 +10,7 @@ export interface QsoFilterValues {
 }
 
 export function QsoFilters({ onFilter }: { onFilter?: (filters: QsoFilterValues) => void }) {
+  const { t } = useI18n();
   const [call, setCall] = useState("");
   const [band, setBand] = useState("");
   const [mode, setMode] = useState("");
@@ -27,28 +29,28 @@ export function QsoFilters({ onFilter }: { onFilter?: (filters: QsoFilterValues)
   };
 
   return (
-    <form className="filters" onSubmit={handleSubmit} aria-label="QSO 筛选">
+    <form className="filters" onSubmit={handleSubmit} aria-label={t("qsos.filterTitle")}>
       <label>
-        呼号筛选
-        <input name="call" value={call} onChange={(e) => setCall(e.target.value)} placeholder="例如 BG4YYY" />
+        {t("common.filter") === "筛选" ? "呼号筛选" : t("qsos.call")}
+        <input name="call" value={call} onChange={(e) => setCall(e.target.value)} placeholder="BG4YYY" />
       </label>
       <label>
-        波段
-        <input name="band" value={band} onChange={(e) => setBand(e.target.value)} placeholder="例如 20M" />
+        {t("qsos.band")}
+        <input name="band" value={band} onChange={(e) => setBand(e.target.value)} placeholder="20M" />
       </label>
       <label>
-        模式
-        <input name="mode" value={mode} onChange={(e) => setMode(e.target.value)} placeholder="例如 SSB, FT8" />
+        {t("qsos.mode")}
+        <input name="mode" value={mode} onChange={(e) => setMode(e.target.value)} placeholder="SSB, FT8" />
       </label>
       <label>
-        起始日期
+        {t("qsos.dateFrom")}
         <input name="date_from" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} placeholder="YYYYMMDD" />
       </label>
       <label>
-        截止日期
+        {t("qsos.dateTo")}
         <input name="date_to" value={dateTo} onChange={(e) => setDateTo(e.target.value)} placeholder="YYYYMMDD" />
       </label>
-      <button type="submit">筛选</button>
+      <button type="submit">{t("common.filter")}</button>
     </form>
   );
 }

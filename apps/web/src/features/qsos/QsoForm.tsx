@@ -1,13 +1,16 @@
 import { useState, type FormEvent } from "react";
 import { api } from "../../lib/api-client";
+import { useI18n } from "../../lib/i18n";
 
 type QsoFormValue = { id?: number; call: string; station_callsign: string; qso_date: string; time_on: string; band: string; mode: string; comment?: string };
 type QsoFormApi = { patch: (id: number, patch: Record<string, unknown>, etag: string) => Promise<unknown>; create?: (input: Record<string, unknown>) => Promise<unknown> };
 
 export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { initial: QsoFormValue; etag?: string; api?: QsoFormApi; onSaved?: () => void }) {
+  const { t, locale } = useI18n();
   const [value, setValue] = useState(initial);
   const [message, setMessage] = useState<string | null>(null);
   const isEditing = Boolean(value.id && etag);
+
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     try {
@@ -26,23 +29,102 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
         };
         await formApi.create(createPayload);
       }
-      setMessage("已保存");
+      setMessage(locale === "zh" ? "已保存" : "Saved");
       onSaved?.();
-    } catch (error) { setMessage(error instanceof Error ? error.message : "保存失败"); }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : (locale === "zh" ? "保存失败" : "Failed to save"));
+    }
   };
+
+  const callLabel = locale === "zh" ? "对方呼号" : t("qsos.call");
+  const stationLabel = locale === "zh" ? "本台呼号" : t("qsos.stationCallsign");
+  const dateLabel = locale === "zh" ? "UTC 日期" : t("qsos.date");
+  const timeLabel = locale === "zh" ? "UTC 时间" : t("qsos.time");
+  const bandLabel = locale === "zh" ? "波段" : t("qsos.band");
+  const modeLabel = locale === "zh" ? "模式" : t("qsos.mode");
+  const saveLabel = locale === "zh" ? "保存" : t("common.save");
+
   return (
-    <form onSubmit={submit} aria-label="QSO 表单">
+    <form onSubmit={submit} aria-label={locale === "zh" ? "QSO 表单" : "QSO Form"}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.75rem" }}>
-        <label>对方呼号<input aria-label="对方呼号" value={value.call} disabled={isEditing} onChange={(event) => setValue({ ...value, call: event.target.value })} required placeholder="例如 BG4YYY" /></label>
-        <label>本台呼号<input aria-label="本台呼号" value={value.station_callsign} disabled={isEditing} onChange={(event) => setValue({ ...value, station_callsign: event.target.value })} required placeholder="例如 BI1ABC" /></label>
-        <label>UTC 日期<input type="text" value={value.qso_date} disabled={isEditing} onChange={(event) => setValue({ ...value, qso_date: event.target.value })} required placeholder="YYYYMMDD" /></label>
-        <label>UTC 时间<input type="text" value={value.time_on} disabled={isEditing} onChange={(event) => setValue({ ...value, time_on: event.target.value })} required placeholder="HHMMSS" /></label>
-        <label>波段<input value={value.band} onChange={(event) => setValue({ ...value, band: event.target.value })} required placeholder="例如 20M" /></label>
-        <label>模式<input value={value.mode} onChange={(event) => setValue({ ...value, mode: event.target.value })} required placeholder="例如 SSB, FT8" /></label>
+        <label>
+          {callLabel}
+          <input
+            aria-label={callLabel}
+            value={value.call}
+            disabled={isEditing}
+            onChange={(event) => setValue({ ...value, call: event.target.value })}
+            required
+            placeholder={locale === "zh" ? "例如 BG4YYY" : "e.g. BG4YYY"}
+          />
+        </label>
+        <label>
+          {stationLabel}
+          <input
+            aria-label={stationLabel}
+            value={value.station_callsign}
+            disabled={isEditing}
+            onChange={(event) => setValue({ ...value, station_callsign: event.target.value })}
+            required
+            placeholder={locale === "zh" ? "例如 BI1ABC" : "e.g. BI1ABC"}
+          />
+        </label>
+        <label>
+          {dateLabel}
+          <input
+            type="text"
+            value={value.qso_date}
+            disabled={isEditing}
+            onChange={(event) => setValue({ ...value, qso_date: event.target.value })}
+            required
+            placeholder="YYYYMMDD"
+          />
+        </label>
+        <label>
+          {timeLabel}
+          <input
+            type="text"
+            value={value.time_on}
+            disabled={isEditing}
+            onChange={(event) => setValue({ ...value, time_on: event.target.value })}
+            required
+            placeholder="HHMMSS"
+          />
+        </label>
+        <label>
+          {bandLabel}
+          <input
+            value={value.band}
+            onChange={(event) => setValue({ ...value, band: event.target.value })}
+            required
+            placeholder={locale === "zh" ? "例如 20M" : "e.g. 20M"}
+          />
+        </label>
+        <label>
+          {modeLabel}
+          <input
+            value={value.mode}
+            onChange={(event) => setValue({ ...value, mode: event.target.value })}
+            required
+            placeholder={locale === "zh" ? "例如 SSB, FT8" : "e.g. SSB, FT8"}
+          />
+        </label>
       </div>
       <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap", marginTop: "0.25rem" }}>
-        <button type="submit" style={{ minWidth: "120px" }}>保存</button>
-        {message && <output role="status" style={{ color: message.includes("失败") || message.includes("changed") || message.includes("Stale") ? "var(--danger, #ef4444)" : "var(--success, #10b981)", fontWeight: 500 }}>{message}</output>}
+        <button type="submit" style={{ minWidth: "120px" }}>{saveLabel}</button>
+        {message && (
+          <output
+            role="status"
+            style={{
+              color: message.includes("失败") || message.includes("Failed") || message.includes("changed") || message.includes("Stale")
+                ? "var(--danger, #ef4444)"
+                : "var(--success, #10b981)",
+              fontWeight: 500
+            }}
+          >
+            {message}
+          </output>
+        )}
       </div>
     </form>
   );

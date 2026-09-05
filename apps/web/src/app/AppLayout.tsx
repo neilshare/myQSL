@@ -1,21 +1,37 @@
 import { useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router";
+import { useTheme, type Theme } from "../lib/theme";
+import { useI18n, type TranslationKey } from "../lib/i18n";
 
-const NAV_ITEMS = [
-  { path: "/admin/qsos", label: "QSO 日志", icon: "📻" },
-  { path: "/admin/cards", label: "卡片管理", icon: "🪪" },
-  { path: "/admin/templates", label: "模板设计", icon: "🎨" },
-  { path: "/admin/import", label: "ADIF 导入", icon: "📥" },
-  { path: "/admin/settings/stations", label: "台站设置", icon: "⚙️" },
-  { path: "/admin/trash", label: "回收站", icon: "🗑️" },
-  { path: "/lookup", label: "索卡查验", icon: "🔍" },
+interface NavItemConfig {
+  path: string;
+  key: TranslationKey;
+  icon: string;
+}
+
+const NAV_CONFIG: NavItemConfig[] = [
+  { path: "/admin/qsos", key: "nav.qsos", icon: "📻" },
+  { path: "/admin/cards", key: "nav.cards", icon: "🪪" },
+  { path: "/admin/templates", key: "nav.templates", icon: "🎨" },
+  { path: "/admin/import", key: "nav.import", icon: "📥" },
+  { path: "/admin/settings/stations", key: "nav.stations", icon: "⚙️" },
+  { path: "/admin/trash", key: "nav.trash", icon: "🗑️" },
+  { path: "/lookup", key: "nav.lookup", icon: "🔍" },
 ];
 
 export function AppLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const { theme, setTheme } = useTheme();
+  const { locale, setLocale, t } = useI18n();
 
   const isPublicCard = location.pathname.startsWith("/c/");
+
+  const THEMES: Array<{ id: Theme; label: string; icon: string }> = [
+    { id: "blue", label: t("theme.blue"), icon: "🔵" },
+    { id: "white", label: t("theme.white"), icon: "⚪" },
+    { id: "claude", label: t("theme.claude"), icon: "🟡" },
+  ];
 
   return (
     <div className="app-shell">
@@ -26,12 +42,12 @@ export function AppLayout() {
               <span className="brand-icon">📻</span>
               <span className="brand-text">myQSL</span>
             </NavLink>
-            <span className="brand-badge">HAM Core</span>
+            <span className="brand-badge">{t("brand.badge")}</span>
           </div>
 
           {/* Desktop & Tablet Navigation */}
-          <nav className="desktop-nav" aria-label="主导航">
-            {NAV_ITEMS.map((item) => (
+          <nav className="desktop-nav" aria-label={t("nav.qsos")}>
+            {NAV_CONFIG.map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}
@@ -40,27 +56,83 @@ export function AppLayout() {
                 }
               >
                 <span className="nav-icon">{item.icon}</span>
-                <span className="nav-label">{item.label}</span>
+                <span className="nav-label">{t(item.key)}</span>
               </NavLink>
             ))}
           </nav>
 
-          {/* Mobile Hamburger Button */}
-          <button
-            type="button"
-            className="mobile-menu-btn"
-            aria-label={mobileMenuOpen ? "关闭菜单" : "打开菜单"}
-            aria-expanded={mobileMenuOpen}
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            <span className="hamburger-icon">{mobileMenuOpen ? "✕" : "☰"}</span>
-          </button>
+          {/* Header Controls (Theme & Lang Switcher) */}
+          <div className="header-controls">
+            <div className="theme-selector" role="group" aria-label={t("theme.title")}>
+              {THEMES.map((th) => (
+                <button
+                  key={th.id}
+                  type="button"
+                  className={`theme-pill-btn ${theme === th.id ? "active" : ""}`}
+                  onClick={() => setTheme(th.id)}
+                  title={`${t("theme.title")}: ${th.label}`}
+                  aria-pressed={theme === th.id}
+                >
+                  <span>{th.icon}</span>
+                  <span>{th.label}</span>
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              className="lang-toggle-btn"
+              onClick={() => setLocale(locale === "zh" ? "en" : "zh")}
+              title={t("lang.title")}
+              aria-label={t("lang.title")}
+            >
+              <span>🌐</span>
+              <span>{locale === "zh" ? "EN" : "中文"}</span>
+            </button>
+
+            {/* Mobile Hamburger Button */}
+            <button
+              type="button"
+              className="mobile-menu-btn"
+              aria-label={mobileMenuOpen ? t("common.cancel") : "Menu"}
+              aria-expanded={mobileMenuOpen}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              <span className="hamburger-icon">{mobileMenuOpen ? "✕" : "☰"}</span>
+            </button>
+          </div>
         </div>
 
         {/* Mobile Dropdown Drawer */}
         {mobileMenuOpen && (
           <nav className="mobile-nav" aria-label="移动端导航">
-            {NAV_ITEMS.map((item) => (
+            <div className="mobile-nav-controls">
+              <div className="theme-selector" role="group" aria-label={t("theme.title")}>
+                {THEMES.map((th) => (
+                  <button
+                    key={th.id}
+                    type="button"
+                    className={`theme-pill-btn ${theme === th.id ? "active" : ""}`}
+                    onClick={() => setTheme(th.id)}
+                    aria-pressed={theme === th.id}
+                  >
+                    <span>{th.icon}</span>
+                    <span>{th.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                className="lang-toggle-btn"
+                onClick={() => setLocale(locale === "zh" ? "en" : "zh")}
+              >
+                <span>🌐</span>
+                <span>{locale === "zh" ? "EN" : "中文"}</span>
+              </button>
+            </div>
+
+            {NAV_CONFIG.map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}
@@ -70,7 +142,7 @@ export function AppLayout() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <span className="nav-icon">{item.icon}</span>
-                <span className="nav-label">{item.label}</span>
+                <span className="nav-label">{t(item.key)}</span>
               </NavLink>
             ))}
           </nav>
@@ -85,11 +157,11 @@ export function AppLayout() {
       {/* Global Compact Footer */}
       <footer className="app-footer">
         <div className="footer-inner">
-          <span>myQSL — 业余无线电电子 QSL 卡片与通联系统</span>
+          <span>{t("footer.text")}</span>
           <span className="footer-links">
-            <NavLink to="/lookup">公开查验</NavLink>
+            <NavLink to="/lookup">{t("footer.lookup")}</NavLink>
             <span className="divider">·</span>
-            <a href="https://myqsl.app" target="_blank" rel="noreferrer">官方文档</a>
+            <a href="https://myqsl.app" target="_blank" rel="noreferrer">{t("footer.docs")}</a>
           </span>
         </div>
       </footer>
