@@ -20,5 +20,8 @@ export const Problems = {
   authInvalid: "https://myqsl.app/problems/auth-invalid",
   originForbidden: "https://myqsl.app/problems/origin-forbidden",
   rateLimited: "https://myqsl.app/problems/rate-limited",
-  notFound: "https://myqsl.app/problems/not-found"
+  notFound: "https://myqsl.app/problems/not-found",
+  internalError: "https://myqsl.app/problems/internal-error",
+  serviceUnavailable: "https://myqsl.app/problems/service-unavailable"
 } as const;
+

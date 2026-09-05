@@ -94,20 +94,54 @@ describe("public card projection and lookup", () => {
       headers: ownerHeaders
     });
 
-    // Now published card & image -> 200
+    // Now published card & image -> 200 with Cache-Control: no-store
     const pubCardRes = await exports.default.fetch(`https://example.test/api/v1/public/cards/${card.public_id}`);
     expect(pubCardRes.status).toBe(200);
+    expect(pubCardRes.headers.get("Cache-Control")).toBe("no-store");
+
     const pubImgRes = await exports.default.fetch(`https://example.test/api/v1/public/cards/${card.public_id}/image`);
     expect(pubImgRes.status).toBe(200);
+    expect(pubImgRes.headers.get("Cache-Control")).toBe("no-store");
+    const etag = pubImgRes.headers.get("ETag");
+    expect(etag).toBeDefined();
 
-    // Lookup should find this card
-    const lookupRes = await exports.default.fetch("https://example.test/api/v1/public/card-lookup", {
+    // Conditional request with matching ETag returns 304
+    const conditionalImgRes = await exports.default.fetch(`https://example.test/api/v1/public/cards/${card.public_id}/image`, {
+      headers: { "If-None-Match": etag! }
+    });
+    expect(conditionalImgRes.status).toBe(304);
+    expect(conditionalImgRes.headers.get("Cache-Control")).toBe("no-store");
+
+    // Void the card
+    const voidRes = await exports.default.fetch(`https://example.test/api/v1/cards/${card.id}/void`, {
+      method: "POST",
+      headers: ownerHeaders
+    });
+    expect(voidRes.status).toBe(200);
+
+    // After void: metadata returns 410
+    const voidCardRes = await exports.default.fetch(`https://example.test/api/v1/public/cards/${card.public_id}`);
+    expect(voidCardRes.status).toBe(410);
+
+    // After void: image returns 410
+    const voidImgRes = await exports.default.fetch(`https://example.test/api/v1/public/cards/${card.public_id}/image`);
+    expect(voidImgRes.status).toBe(410);
+
+    // CRITICAL: Even when sending If-None-Match with matching ETag, void MUST RETURN 410, NEVER 304!
+    const voidConditionalImgRes = await exports.default.fetch(`https://example.test/api/v1/public/cards/${card.public_id}/image`, {
+      headers: { "If-None-Match": etag! }
+    });
+    expect(voidConditionalImgRes.status).toBe(410);
+
+    // Lookup should no longer return voided card
+    const lookupAfterVoidRes = await exports.default.fetch("https://example.test/api/v1/public/card-lookup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ call: "VR2XYZ", qso_date: "20260904" })
     });
-    expect(lookupRes.status).toBe(200);
-    const lookupData = ((await lookupRes.json()) as { data: Array<{ public_id: string }> }).data;
-    expect(lookupData.some((c) => c.public_id === card.public_id)).toBe(true);
+    expect(lookupAfterVoidRes.status).toBe(200);
+    const lookupAfterVoidData = ((await lookupAfterVoidRes.json()) as { data: Array<{ public_id: string }> }).data;
+    expect(lookupAfterVoidData.some((c) => c.public_id === card.public_id)).toBe(false);
   });
 });
+

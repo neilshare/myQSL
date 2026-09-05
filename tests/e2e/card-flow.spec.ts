@@ -75,10 +75,22 @@ test.describe("Card creation, publication, and verification lifecycle", () => {
     const voidRes = await authedRequest.post(`/api/v1/cards/${targetCard!.id}/void`);
     expect(voidRes.status()).toBe(200);
 
-    // 6. Verify 410 Gone on both public page and API
-    // Direct public API check returns 410
+    // 6. Verify 410 Gone on both public page, metadata API, and image API
+    // Direct public API check returns 410 with Cache-Control: no-store
     const publicApiRes = await publicRequest.get(`/api/v1/public/cards/${publicId}`);
     expect(publicApiRes.status()).toBe(410);
+    expect(publicApiRes.headers()["cache-control"]).toBe("no-store");
+
+    // Public image check returns 410 with Cache-Control: no-store
+    const publicImgRes = await publicRequest.get(`/api/v1/public/cards/${publicId}/image`);
+    expect(publicImgRes.status()).toBe(410);
+    expect(publicImgRes.headers()["cache-control"]).toBe("no-store");
+
+    // Conditional request with If-None-Match MUST STILL RETURN 410, NEVER 304!
+    const conditionalImgRes = await publicRequest.get(`/api/v1/public/cards/${publicId}/image`, {
+      headers: { "If-None-Match": '"some-etag"' }
+    });
+    expect(conditionalImgRes.status()).toBe(410);
 
     // Public web page visiting the voided card shows void notice
     await publicPage.goto(`/c/${publicId}`);
