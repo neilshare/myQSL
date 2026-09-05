@@ -78,35 +78,35 @@ myQSL 采用 **Modular Worker Monolith（模块化 Worker 单体）** 架构。�
 
 ```mermaid
 flowchart TB
-    subgraph Client["客户端层 (Client Layer)"]
-        BrowserAdmin["所有者管理控制台 (Admin SPA)<br/>React 18 + Vite + Tailwind"]
+    subgraph Client["多端客户端接入层"]
+        BrowserAdmin["所有者管理控制台 (Admin SPA)<br/>React 19 + Vite + TypeScript"]
         BrowserPublic["公共访客查验端 (Public Lookup)<br/>精确索卡 + 无损原图下载"]
     end
 
-    subgraph Edge["Cloudflare 边缘安全接入层 (Edge Gateway)"]
+    subgraph Edge["Cloudflare 边缘安全网关层"]
         Access["Cloudflare Access 零信任网关<br/>Owner 身份认证与 JWT 签发"]
-        RateLimiter["边缘速率限制器 (Rate Limiter)<br/>动态加盐 IP 频率控制"]
+        RateLimiter["边缘速率限制器 (Rate Limiter)<br/>动态加盐 IP 频率控制 (60 req/min)"]
     end
 
-    subgraph Runtime["Worker 服务运行时 (Modular Worker Monolith)"]
+    subgraph Runtime["Worker 服务调度与审计层"]
         HonoApp["Hono 核心路由调度引擎"]
         AuthMid["Access JWT 认证与身份解析"]
         AuditMod["不可篡改审计模块 (AuditWriter)"]
-        
-        subgraph BusinessModules["领域业务模块"]
-            ModStation["Stations 模块"]
-            ModQso["QSOs 模块"]
-            ModImport["Imports 模块 (Web Worker)"]
-            ModTemplate["Templates 模块"]
-            ModCard["Cards 模块"]
-            ModPublic["Public 模块"]
-            ModBackup["Backup 模块 (Workflows)"]
-        end
     end
 
-    subgraph Storage["持久化与灾备存储 (Storage & DR)"]
-        D1DB[("Cloudflare D1<br/>边缘分布式 SQLite 数据库")]
-        R2Bucket[("Cloudflare R2<br/>卡片图片与背景对象存储")]
+    subgraph Modules["核心业务领域模块"]
+        ModStation["Stations 台站配置模块"]
+        ModQso["QSOs 通联日志引擎"]
+        ModImport["Imports 分块导入模块"]
+        ModTemplate["Templates 模板管理模块"]
+        ModCard["Cards 制卡与流转引擎"]
+        ModPublic["Public 公开索卡查验模块"]
+        ModBackup["Backups 容灾备份触发模块"]
+    end
+
+    subgraph Storage["持久化与灾备存储层"]
+        D1DB["Cloudflare D1<br/>边缘分布式 SQLite 数据库"]
+        R2Bucket["Cloudflare R2<br/>卡片图片与背景对象存储"]
         BackupWorkflow["D1 Backup Workflow<br/>每日流式导出与离线校验"]
     end
 
@@ -116,11 +116,31 @@ flowchart TB
     RateLimiter --> ModPublic
 
     AuthMid --> HonoApp
-    HonoApp --> BusinessModules
-    BusinessModules --> AuditMod
+
+    HonoApp --> ModStation
+    HonoApp --> ModQso
+    HonoApp --> ModImport
+    HonoApp --> ModTemplate
+    HonoApp --> ModCard
+    HonoApp --> ModBackup
+
+    ModStation --> AuditMod
+    ModQso --> AuditMod
+    ModImport --> AuditMod
+    ModTemplate --> AuditMod
+    ModCard --> AuditMod
+
     AuditMod --> D1DB
-    BusinessModules --> D1DB
-    BusinessModules --> R2Bucket
+    ModStation --> D1DB
+    ModQso --> D1DB
+    ModImport --> D1DB
+    ModTemplate --> D1DB
+    ModTemplate --> R2Bucket
+    ModCard --> D1DB
+    ModCard --> R2Bucket
+    ModPublic --> D1DB
+    ModPublic --> R2Bucket
+
     ModBackup --> BackupWorkflow
     BackupWorkflow --> D1DB
     BackupWorkflow --> R2Bucket

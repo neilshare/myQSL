@@ -99,52 +99,71 @@ flowchart TB
     subgraph Client["多端客户端接入层"]
         AdminBrowser["电台室 PC / 笔记本控制台<br/>Chrome / Firefox / Safari"]
         MobilePWA["移动端 / 平板 PWA<br/>野外架台 / SOTA / POTA 离线录入"]
-        PublicVisitor["全球通联友台 (Public Visitor)<br/>呼号精确索卡 / 卡片无损查验"]
+        PublicVisitor["全球通联友台<br/>呼号精确索卡 / 无损查验"]
     end
 
-    subgraph EdgeGateway["Cloudflare 边缘安全接入与网关层"]
-        Access["Cloudflare Access (Zero Trust)<br/>身份断言认证与 RS256 JWT 签发"]
-        RateLimiter["边缘速率限制器 (Public Rate Limiter)<br/>动态加盐 IP 频率控制 (60 req/min)"]
+    subgraph EdgeGateway["Cloudflare 边缘安全网关层"]
+        Access["Cloudflare Access 零信任网关<br/>Owner 身份认证与 JWT 签发"]
+        RateLimiter["边缘速率限制器 (Rate Limiter)<br/>动态加盐 IP 频率控制 (60 req/min)"]
         WAF["Cloudflare WAF & DDoS 防护<br/>全链路 TLS 1.3 加密传输"]
     end
 
-    subgraph WorkerRuntime["Cloudflare Worker 运行时 (Modular Worker Monolith)"]
+    subgraph WorkerRuntime["Worker 服务调度与审计层"]
         HonoApp["Hono 核心 API 调度器"]
         AuthMid["Access JWT 鉴权中间件"]
         OriginGuard["Same-Origin CSRF 校验中间件"]
         AuditWriter["原子操作双轨审计组件"]
+    end
 
-        subgraph CoreModules["核心业务领域模块"]
-            ModStations["Stations 台站配置模块"]
-            ModQSOs["QSOs 通联日志引擎"]
-            ModImports["Imports 分块导入处理模块"]
-            ModTemplates["Templates 模板管理模块"]
-            ModCards["Cards 制卡与流转引擎"]
-            ModPublic["Public 公开索卡查验模块"]
-            ModBackups["Backups 容灾备份触发模块"]
-        end
+    subgraph CoreModules["核心业务领域模块"]
+        ModStations["Stations 台站配置模块"]
+        ModQSOs["QSOs 通联日志引擎"]
+        ModImports["Imports 分块导入模块"]
+        ModTemplates["Templates 模板管理模块"]
+        ModCards["Cards 制卡与流转引擎"]
+        ModPublic["Public 公开索卡查验模块"]
+        ModBackups["Backups 容灾备份触发模块"]
     end
 
     subgraph StorageDR["边缘持久化存储与自动化灾备层"]
-        D1DB[("Cloudflare D1<br/>分布式 Serverless SQLite 数据库")]
-        R2Media[("Cloudflare R2<br/>卡片底图、生成成品图片存储桶")]
+        D1DB["Cloudflare D1<br/>分布式 Serverless SQLite 数据库"]
+        R2Media["Cloudflare R2<br/>卡片底图、生成成品图片存储桶"]
         Workflows["Cloudflare Workflows<br/>每日流式备份调度与原子状态机"]
     end
 
     AdminBrowser -->|"携带 Access 凭据"| Access
-    MobilePWA -->|"PWA 离线/在线混合"| Access
+    MobilePWA -->|"PWA 在线/离线混合"| Access
     Access --> AuthMid
     PublicVisitor --> RateLimiter
     RateLimiter --> ModPublic
 
     AuthMid --> HonoApp
     OriginGuard --> HonoApp
-    HonoApp --> CoreModules
 
-    CoreModules --> AuditWriter
+    HonoApp --> ModStations
+    HonoApp --> ModQSOs
+    HonoApp --> ModImports
+    HonoApp --> ModTemplates
+    HonoApp --> ModCards
+    HonoApp --> ModBackups
+
+    ModStations --> AuditWriter
+    ModQSOs --> AuditWriter
+    ModImports --> AuditWriter
+    ModTemplates --> AuditWriter
+    ModCards --> AuditWriter
+
     AuditWriter --> D1DB
-    CoreModules --> D1DB
-    CoreModules --> R2Media
+    ModStations --> D1DB
+    ModQSOs --> D1DB
+    ModImports --> D1DB
+    ModTemplates --> D1DB
+    ModTemplates --> R2Media
+    ModCards --> D1DB
+    ModCards --> R2Media
+    ModPublic --> D1DB
+    ModPublic --> R2Media
+
     ModBackups --> Workflows
     Workflows --> D1DB
     Workflows --> R2Media
