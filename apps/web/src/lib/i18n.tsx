@@ -22,7 +22,7 @@ export const dictionaries = {
       title: "主题色调",
       blue: "经典蓝",
       white: "纯净白",
-      claude: "ClaudeCode"
+      claude: "典雅黄"
     },
     lang: {
       title: "语言",
@@ -183,7 +183,7 @@ export const dictionaries = {
       title: "Theme Tone",
       blue: "Tech Blue",
       white: "Minimal White",
-      claude: "ClaudeCode"
+      claude: "Elegant Amber"
     },
     lang: {
       title: "Language",

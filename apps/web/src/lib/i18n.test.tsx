@@ -67,6 +67,7 @@ describe("i18n System", () => {
 
     expect(screen.getByTestId("current-locale").textContent).toBe("zh");
     expect(screen.getByTestId("nav-qsos").textContent).toBe("QSO 日志");
+    expect(screen.getByTestId("theme-claude").textContent).toBe("典雅黄");
     expect(document.documentElement.getAttribute("lang")).toBe("zh");
   });
 
@@ -80,12 +81,14 @@ describe("i18n System", () => {
     fireEvent.click(screen.getByRole("button", { name: "Set English" }));
     expect(screen.getByTestId("current-locale").textContent).toBe("en");
     expect(screen.getByTestId("nav-qsos").textContent).toBe("QSO Logs");
+    expect(screen.getByTestId("theme-claude").textContent).toBe("Elegant Amber");
     expect(document.documentElement.getAttribute("lang")).toBe("en");
     expect(localStorage.getItem("myqsl_locale")).toBe("en");
 
     fireEvent.click(screen.getByRole("button", { name: "Set Chinese" }));
     expect(screen.getByTestId("current-locale").textContent).toBe("zh");
     expect(screen.getByTestId("nav-qsos").textContent).toBe("QSO 日志");
+    expect(screen.getByTestId("theme-claude").textContent).toBe("典雅黄");
     expect(document.documentElement.getAttribute("lang")).toBe("zh");
     expect(localStorage.getItem("myqsl_locale")).toBe("zh");
   });
