@@ -3,6 +3,7 @@
   "name": "myqsl",
   "main": "./apps/worker/src/index.ts",
   "compatibility_date": "2026-09-03",
+  "workers_dev": true,
   "assets": {
     "directory": "./apps/web/dist",
     "binding": "ASSETS",
@@ -25,11 +26,17 @@
       "simple": { "limit": 60, "period": 60 }
     }
   ],
+  "routes": [
+    {
+      "pattern": "myqsl.203031.xyz",
+      "custom_domain": true
+    }
+  ],
   "vars": {
     "APP_ENV": "production",
-    "PUBLIC_ORIGIN": "https://myqsl.app",
-    "ACCESS_TEAM_DOMAIN": "https://myqsl.cloudflareaccess.com",
-    "ACCESS_AUD": "myqsl-production-audience"
+    "PUBLIC_ORIGIN": "https://myqsl.203031.xyz",
+    "ACCESS_TEAM_DOMAIN": "https://delin.cloudflareaccess.com",
+    "ACCESS_AUD": "e3984f251d907ffba60f1d3c680cd21f8c9bebc0ccfe124f522a059b5bb2c197"
   },
   "triggers": {
     "crons": ["0 20 * * *"]
