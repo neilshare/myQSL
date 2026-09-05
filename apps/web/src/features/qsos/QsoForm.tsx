@@ -1,8 +1,25 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { api } from "../../lib/api-client";
 import { useI18n } from "../../lib/i18n";
+import {
+  TOP_10_DEFAULT_FREQS,
+  getBandFromFreq,
+  getDefaultFreqForBand,
+  getStoredFreqHistory,
+  saveFreqToHistory
+} from "./frequency-helpers";
 
-type QsoFormValue = { id?: number; call: string; station_callsign: string; qso_date: string; time_on: string; band: string; mode: string; comment?: string };
+type QsoFormValue = {
+  id?: number;
+  call: string;
+  station_callsign: string;
+  qso_date: string;
+  time_on: string;
+  band: string;
+  freq_mhz?: string | null;
+  mode: string;
+  comment?: string;
+};
 type QsoFormApi = { patch: (id: number, patch: Record<string, unknown>, etag: string) => Promise<unknown>; create?: (input: Record<string, unknown>) => Promise<unknown> };
 
 export function getCurrentUtcDateTime(): { qso_date: string; time_on: string } {
@@ -22,10 +39,18 @@ export function getCurrentUtcDateTime(): { qso_date: string; time_on: string } {
 
 export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { initial: QsoFormValue; etag?: string; api?: QsoFormApi; onSaved?: () => void }) {
   const { t, locale } = useI18n();
+  const [freqHistory, setFreqHistory] = useState<string[]>(() => getStoredFreqHistory());
   const [value, setValue] = useState<QsoFormValue>(() => {
     const utc = getCurrentUtcDateTime();
+    const initialBand = initial.band || "";
+    let initialFreq = initial.freq_mhz ?? "";
+    if (!initialFreq && initialBand) {
+      initialFreq = getDefaultFreqForBand(initialBand) ?? "";
+    }
     return {
       ...initial,
+      band: initialBand,
+      freq_mhz: initialFreq,
       qso_date: initial.qso_date || utc.qso_date,
       time_on: initial.time_on || utc.time_on
     };
@@ -39,21 +64,59 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
     }
   }, [initial.id]);
 
+  const handleFreqChange = (newFreq: string) => {
+    const detectedBand = getBandFromFreq(newFreq);
+    setValue((prev) => ({
+      ...prev,
+      freq_mhz: newFreq,
+      band: detectedBand ? detectedBand : prev.band
+    }));
+  };
+
+  const handleBandChange = (newBand: string) => {
+    const trimmedBand = newBand.trim().toUpperCase();
+    const currentFreqBand = value.freq_mhz ? getBandFromFreq(value.freq_mhz) : null;
+    let nextFreq = value.freq_mhz;
+    if (!value.freq_mhz || currentFreqBand !== trimmedBand) {
+      const defaultFreq = getDefaultFreqForBand(trimmedBand);
+      if (defaultFreq) {
+        nextFreq = defaultFreq;
+      }
+    }
+    setValue((prev) => ({
+      ...prev,
+      band: newBand,
+      freq_mhz: nextFreq
+    }));
+  };
+
+  const handleSelectFreq = (selectedFreq: string) => {
+    if (!selectedFreq) return;
+    handleFreqChange(selectedFreq);
+  };
+
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     try {
+      if (value.freq_mhz && value.freq_mhz.trim()) {
+        const updated = saveFreqToHistory(value.freq_mhz);
+        setFreqHistory(updated);
+      }
+
       if (isEditing && value.id && etag) {
         const patchPayload: Record<string, unknown> = {
           band: value.band,
           mode: value.mode
         };
         if (value.comment !== undefined) patchPayload.comment = value.comment;
+        if (value.freq_mhz !== undefined) patchPayload.freq_mhz = value.freq_mhz ? value.freq_mhz.trim() : null;
         await formApi.patch(value.id, patchPayload, etag);
       } else if (formApi.create) {
         const createPayload = {
           ...value,
           call: value.call.trim().toUpperCase(),
-          time_on: value.time_on.length === 4 ? `${value.time_on}00` : value.time_on
+          time_on: value.time_on.length === 4 ? `${value.time_on}00` : value.time_on,
+          freq_mhz: value.freq_mhz?.trim() ? value.freq_mhz.trim() : null
         };
         await formApi.create(createPayload);
         const nextUtc = getCurrentUtcDateTime();
@@ -76,6 +139,7 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
   const dateLabel = locale === "zh" ? "UTC 日期" : t("qsos.date");
   const timeLabel = locale === "zh" ? "UTC 时间" : t("qsos.time");
   const bandLabel = locale === "zh" ? "波段" : t("qsos.band");
+  const freqLabel = locale === "zh" ? "频率 (MHz)" : t("qsos.freq");
   const modeLabel = locale === "zh" ? "模式" : t("qsos.mode");
   const saveLabel = locale === "zh" ? "保存" : t("common.save");
 
@@ -159,19 +223,87 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
         <label>
           {bandLabel}
           <input
+            aria-label={bandLabel}
             value={value.band}
-            onChange={(event) => setValue({ ...value, band: event.target.value })}
+            onChange={(event) => handleBandChange(event.target.value)}
             required
-            placeholder={locale === "zh" ? "例如 20M" : "e.g. 20M"}
+            placeholder={locale === "zh" ? "例如 20M, 40M, 70CM" : "e.g. 20M, 40M, 70CM"}
           />
         </label>
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
+            <label htmlFor="qso-freq-input" style={{ margin: 0, fontWeight: 500 }}>
+              {freqLabel}
+            </label>
+            {value.freq_mhz && (
+              <span style={{ fontSize: "0.75rem", color: "var(--accent-primary)" }}>
+                {getBandFromFreq(value.freq_mhz) ? `→ ${getBandFromFreq(value.freq_mhz)}` : ""}
+              </span>
+            )}
+          </div>
+          <input
+            id="qso-freq-input"
+            aria-label={freqLabel}
+            list="frequency-presets-list"
+            type="text"
+            value={value.freq_mhz ?? ""}
+            onChange={(event) => handleFreqChange(event.target.value)}
+            placeholder={t("qsos.freqPlaceholder")}
+          />
+          <datalist id="frequency-presets-list">
+            {TOP_10_DEFAULT_FREQS.map((p) => (
+              <option key={p.freq} value={p.freq}>
+                {p.label}
+              </option>
+            ))}
+            {freqHistory.map((h) => (
+              <option key={`hist-${h}`} value={h}>
+                {h} MHz
+              </option>
+            ))}
+          </datalist>
+          <select
+            aria-label={t("qsos.freqSelect")}
+            value=""
+            onChange={(event) => handleSelectFreq(event.target.value)}
+            style={{
+              marginTop: "0.35rem",
+              fontSize: "0.8rem",
+              padding: "0.3rem 0.5rem",
+              minHeight: "34px",
+              color: "var(--text-muted)",
+              backgroundColor: "var(--bg-input)"
+            }}
+          >
+            <option value="">{locale === "zh" ? "▼ 快捷选择常用/中继/历史频率" : "▼ Quick Select Common/Repeater/History"}</option>
+            <optgroup label={locale === "zh" ? "各地常用中继与呼叫 (Top 10)" : "Common & Repeaters (Top 10)"}>
+              {TOP_10_DEFAULT_FREQS.map((p) => (
+                <option key={`select-${p.freq}`} value={p.freq}>
+                  {p.label}
+                </option>
+              ))}
+            </optgroup>
+            {freqHistory.filter((h) => !TOP_10_DEFAULT_FREQS.some((p) => p.freq === h)).length > 0 && (
+              <optgroup label={locale === "zh" ? "我的历史输入" : "My History"}>
+                {freqHistory
+                  .filter((h) => !TOP_10_DEFAULT_FREQS.some((p) => p.freq === h))
+                  .map((h) => (
+                    <option key={`select-hist-${h}`} value={h}>
+                      {h} MHz
+                    </option>
+                  ))}
+              </optgroup>
+            )}
+          </select>
+        </div>
         <label>
           {modeLabel}
           <input
+            aria-label={modeLabel}
             value={value.mode}
             onChange={(event) => setValue({ ...value, mode: event.target.value })}
             required
-            placeholder={locale === "zh" ? "例如 SSB, FT8" : "e.g. SSB, FT8"}
+            placeholder={locale === "zh" ? "例如 SSB, FT8, FM" : "e.g. SSB, FT8, FM"}
           />
         </label>
       </div>

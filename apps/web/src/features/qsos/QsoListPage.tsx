@@ -63,7 +63,7 @@ export function QsoListPage() {
       <div className="card-section" style={{ marginBottom: "1.5rem" }}>
         <h3 style={{ marginTop: 0, marginBottom: "0.75rem", fontSize: "1.1rem" }}>{t("qsos.createTitle")}</h3>
         <QsoForm
-          initial={{ call: "", station_callsign: "BI1ABC", qso_date: "", time_on: "", band: "", mode: "" }}
+          initial={{ call: "", station_callsign: "BI1ABC", qso_date: "", time_on: "", band: "", freq_mhz: "", mode: "" }}
           api={api.qsos}
           onSaved={() => void loadQsos(filters)}
         />
@@ -91,6 +91,7 @@ export function QsoListPage() {
               qso_date: editingRow.qso_date,
               time_on: editingRow.time_on,
               band: editingRow.band,
+              freq_mhz: editingRow.freq_mhz ?? undefined,
               mode: editingRow.mode,
               comment: editingRow.comment ?? undefined
             }}
@@ -133,6 +134,7 @@ export function QsoListPage() {
                   }}
                 >
                   {String(row.band)} / {String(row.mode)}
+                  {row.freq_mhz ? ` · ${row.freq_mhz} MHz` : ""}
                 </span>
               </div>
               <div className="qso-actions">
