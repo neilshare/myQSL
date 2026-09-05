@@ -11,9 +11,15 @@ export function CanvasPreview({
   backgroundUrl?: string | null;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const [renderError, setRenderError] = React.useState<string | null>(null);
+
+  const width = (template as any)?.base_width ?? 1264;
+  const height = (template as any)?.base_height ?? 848;
 
   useEffect(() => {
     let active = true;
+    setRenderError(null);
+
     async function draw() {
       if (!ref.current) return;
       if (typeof document !== "undefined" && "fonts" in document) {
@@ -25,7 +31,11 @@ export function CanvasPreview({
         : (template as any);
       await renderCard(ref.current, input, qso);
     }
-    void draw().catch(() => undefined);
+    void draw().catch((err) => {
+      if (active) {
+        setRenderError(err instanceof Error ? err.message : "渲染失败");
+      }
+    });
     return () => {
       active = false;
     };
@@ -42,12 +52,17 @@ export function CanvasPreview({
         boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)"
       }}
     >
+      {renderError && (
+        <div role="alert" style={{ padding: "1rem", color: "#f87171", background: "rgba(239, 68, 68, 0.1)", textAlign: "center" }}>
+          预览渲染异常: {renderError}
+        </div>
+      )}
       <canvas
         ref={ref}
-        width={1264}
-        height={848}
+        width={width}
+        height={height}
         aria-label="QSL 预览"
-        style={{ maxWidth: "100%", height: "auto", display: "block", aspectRatio: "1264 / 848" }}
+        style={{ maxWidth: "100%", height: "auto", display: "block", aspectRatio: `${width} / ${height}` }}
       />
     </div>
   );

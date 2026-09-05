@@ -55,4 +55,41 @@ describe("Canonical API Contracts", () => {
     // Should be 422 (validation error), NOT 401 (auth) and NOT 404 (not found)
     expect(invalidBody.status).toBe(422);
   });
+
+  it("verifies all canonical OpenAPI routes are mounted and active (no 404 route drift)", async () => {
+    // List of canonical endpoints with test parameters
+    const routesToTest = [
+      { path: "/api/v1/qsos", method: "GET", auth: true },
+      { path: "/api/v1/qsos/999999", method: "PATCH", auth: true, body: { version: 1 } },
+      { path: "/api/v1/qsos/999999/restore", method: "POST", auth: true },
+      { path: "/api/v1/stations", method: "GET", auth: true },
+      { path: "/api/v1/card-templates", method: "GET", auth: true },
+      { path: "/api/v1/card-templates/999999", method: "GET", auth: true },
+      { path: "/api/v1/card-templates/999999", method: "PATCH", auth: true, body: { version: 1 } },
+      { path: "/api/v1/card-templates/999999/background", method: "GET", auth: true },
+      { path: "/api/v1/cards", method: "GET", auth: true },
+      { path: "/api/v1/cards/nonexistent/image", method: "POST", auth: true },
+      { path: "/api/v1/cards/nonexistent/publish", method: "POST", auth: true },
+      { path: "/api/v1/cards/nonexistent/void", method: "POST", auth: true },
+      { path: "/api/v1/public/card-lookup", method: "POST", auth: false, body: { call: "VR2XYZ", qso_date: "20260904" } },
+      { path: "/api/v1/public/cards/nonexistent", method: "GET", auth: false },
+      { path: "/api/v1/public/cards/nonexistent/image", method: "GET", auth: false }
+    ];
+
+    for (const r of routesToTest) {
+      const res = await exports.default.fetch(`https://example.test${r.path}`, {
+        method: r.method,
+        headers: r.auth ? ownerHeaders : { "Content-Type": "application/json" },
+        body: r.body ? JSON.stringify(r.body) : undefined
+      });
+
+      // Assert that route was recognized: NOT 404 (Route not found / problem: Problems.notFound)
+      // Note: non-existent entity may return 404 "Not found", but NOT route-level 404 "API route not found"
+      if (res.status === 404) {
+        const body = (await res.json().catch(() => ({}))) as any;
+        expect(body.detail).not.toBe("API route not found");
+      }
+    }
+  });
 });
+

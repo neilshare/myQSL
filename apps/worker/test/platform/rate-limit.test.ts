@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { getEffectiveRateLimitSalt, enforceLookupLimit, enforcePublicLimit } from "../../src/platform/rate-limit";
 import type { Env } from "../../src/env";
 

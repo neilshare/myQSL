@@ -11,9 +11,12 @@ export class TemplateRepository {
     if (!row) throw new Error("Template insert returned no row");
     return row;
   }
-  async update(id: number, version: number, input: { name: string; layoutJson: string; now: number }): Promise<TemplateRow | null> {
+  buildUpdateStatement(id: number, version: number, input: { name: string; layoutJson: string; now: number }): D1PreparedStatement {
     const parsed = JSON.parse(input.layoutJson) as { schema_version: number; base_width: number; base_height: number };
-    const result = await this.db.prepare("UPDATE card_templates SET name = ?, schema_version = ?, base_width = ?, base_height = ?, layout_json = ?, version = version + 1, updated_at = ? WHERE id = ? AND version = ?").bind(input.name, parsed.schema_version, parsed.base_width, parsed.base_height, input.layoutJson, input.now, id, version).run();
+    return this.db.prepare("UPDATE card_templates SET name = ?, schema_version = ?, base_width = ?, base_height = ?, layout_json = ?, version = version + 1, updated_at = ? WHERE id = ? AND version = ?").bind(input.name, parsed.schema_version, parsed.base_width, parsed.base_height, input.layoutJson, input.now, id, version);
+  }
+  async update(id: number, version: number, input: { name: string; layoutJson: string; now: number }): Promise<TemplateRow | null> {
+    const result = await this.buildUpdateStatement(id, version, input).run();
     if (!result.meta.changes) return null;
     return this.get(id);
   }

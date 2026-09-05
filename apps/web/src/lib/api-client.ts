@@ -46,6 +46,12 @@ export const api = {
     list: () => apiFetch<CardTemplateRow[]>("/api/v1/card-templates"),
     get: (id: number) => apiFetch<CardTemplateRow>(`/api/v1/card-templates/${id}`),
     create: (input: { name: string; layout: CardTemplate }) => apiFetch<CardTemplateRow>("/api/v1/card-templates", { method: "POST", body: JSON.stringify(input) }),
+    patch: (id: number, patch: { name?: string; layout?: CardTemplate; version: number }, etag?: string) =>
+      apiFetch<CardTemplateRow>(`/api/v1/card-templates/${id}`, {
+        method: "PATCH",
+        headers: etag ? { "If-Match": etag } : { "If-Match": `"${patch.version}"` },
+        body: JSON.stringify(patch)
+      }),
     uploadBackground: async (id: number, file: Blob | ArrayBuffer, contentType = "image/png") => {
       const response = await fetch(`/api/v1/card-templates/${id}/background`, {
         method: "PUT",

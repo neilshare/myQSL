@@ -1,4 +1,4 @@
-import { exports } from "cloudflare:workers";
+import { env, exports } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
 
 const headers = { "Content-Type": "application/json", "X-EQSR-Test-Actor": "owner", Origin: "http://localhost:8787", "X-EQSR-Request": "1" };
@@ -47,6 +47,57 @@ describe("template API", () => {
     expect(target?.background_r2_key).toBeTruthy();
     expect(target?.background_r2_key).toContain(`templates/${created.id}/`);
     expect(target?.background_sha256).toBeTruthy();
+    expect(target?.background_sha256).toBeTruthy();
     expect(target?.version).toBe(2);
   });
+
+  it("updates template with PATCH using optimistic concurrency (If-Match / version)", async () => {
+    // 1. Create template
+    const createRes = await exports.default.fetch("https://example.test/api/v1/card-templates", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ name: "patch-test", schema_version: 1, base_width: 1264, base_height: 848, elements: [] })
+    });
+    expect(createRes.status).toBe(201);
+    const created = ((await createRes.json()) as { data: { id: number; version: number } }).data;
+
+    // 2. Reject PATCH without version or If-Match -> 428
+    const noVerRes = await exports.default.fetch(`https://example.test/api/v1/card-templates/${created.id}`, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ name: "no-ver" })
+    });
+    expect(noVerRes.status).toBe(428);
+
+    // 3. Reject PATCH with stale version -> 412
+    const staleRes = await exports.default.fetch(`https://example.test/api/v1/card-templates/${created.id}`, {
+      method: "PATCH",
+      headers: { ...headers, "If-Match": '"999"' },
+      body: JSON.stringify({ name: "stale" })
+    });
+    expect(staleRes.status).toBe(412);
+
+    // 4. Successful PATCH with matching version
+    const patchRes = await exports.default.fetch(`https://example.test/api/v1/card-templates/${created.id}`, {
+      method: "PATCH",
+      headers: { ...headers, "If-Match": `"${created.version}"` },
+      body: JSON.stringify({
+        name: "patch-updated-name",
+        base_width: 1920,
+        base_height: 1080
+      })
+    });
+    expect(patchRes.status).toBe(200);
+    const updated = ((await patchRes.json()) as { data: { id: number; name: string; base_width: number; version: number } }).data;
+    expect(updated.name).toBe("patch-updated-name");
+    expect(updated.base_width).toBe(1920);
+    expect(updated.version).toBe(created.version + 1);
+
+    // 5. Verify audit event was recorded for template_update
+    const auditRow = await env.DB.prepare(
+      "SELECT * FROM audit_events WHERE entity = 'card_template' AND entity_id = ? AND action = 'template_update'"
+    ).bind(String(created.id)).first();
+    expect(auditRow).toBeDefined();
+  });
 });
+

@@ -7,6 +7,21 @@ export class TemplateService {
   async create(input: { name: string; layout: unknown }): Promise<TemplateRow> { const layout = CardTemplateSchema.parse(input.layout); return this.repository.create({ name: input.name.trim().slice(0, 120), layoutJson: JSON.stringify(layout), now: this.now() }); }
   list() { return this.repository.list(); }
   get(id: number) { return this.repository.get(id); }
+  async update(id: number, version: number, input: { name?: string; layout?: unknown }): Promise<TemplateRow | null> {
+    const current = await this.repository.get(id);
+    if (!current) return null;
+    let layoutJson = current.layout_json;
+    if (input.layout !== undefined) {
+      const parsed = CardTemplateSchema.parse(input.layout);
+      layoutJson = JSON.stringify(parsed);
+    }
+    const name = input.name !== undefined ? input.name.trim().slice(0, 120) : current.name;
+    return this.repository.update(id, version, {
+      name,
+      layoutJson,
+      now: this.now()
+    });
+  }
   async uploadBackground(templateId: number, body: ArrayBuffer, contentType: string): Promise<{ key: string; etag: string }> {
     if (body.byteLength > 8 * 1024 * 1024) throw new Error("Background exceeds 8 MiB");
     const bytes = new Uint8Array(body);

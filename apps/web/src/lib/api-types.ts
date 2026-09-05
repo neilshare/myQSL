@@ -68,7 +68,6 @@ export interface CardRow {
   image_sha256?: string | null;
   lookup_call?: string | null;
   lookup_qso_date?: string | null;
-  version?: number;
   created_at: number;
   updated_at: number;
 }

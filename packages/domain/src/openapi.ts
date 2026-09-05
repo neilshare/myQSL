@@ -268,6 +268,88 @@ export const myqslOpenApiSpec = {
         }
       }
     },
+    "/api/v1/card-templates/{id}": {
+      get: {
+        summary: "Get Template by ID",
+        operationId: "getTemplate",
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "integer" } }
+        ],
+        responses: {
+          "200": {
+            description: "Template found",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    data: { $ref: "#/components/schemas/CardTemplateRow" }
+                  },
+                  required: ["data"]
+                }
+              }
+            }
+          },
+          "404": {
+            description: "Template not found",
+            content: {
+              "application/problem+json": {
+                schema: { $ref: "#/components/schemas/ProblemDetails" }
+              }
+            }
+          }
+        }
+      },
+      patch: {
+        summary: "Update Template by ID",
+        operationId: "updateTemplate",
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "integer" } },
+          { name: "If-Match", in: "header", required: false, schema: { type: "string" } }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  name: { type: "string" },
+                  layout: { $ref: "#/components/schemas/CardTemplate" },
+                  version: { type: "integer" }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          "200": {
+            description: "Template updated",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    data: { $ref: "#/components/schemas/CardTemplateRow" }
+                  },
+                  required: ["data"]
+                }
+              }
+            }
+          },
+          "412": { $ref: "#/components/responses/PreconditionFailed" },
+          "422": { $ref: "#/components/responses/ValidationError" },
+          "428": {
+            description: "Precondition Required",
+            content: {
+              "application/problem+json": {
+                schema: { $ref: "#/components/schemas/ProblemDetails" }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/card-templates/{id}/background": {
       put: {
         summary: "Upload Template Background Image",
@@ -547,7 +629,28 @@ export const myqslOpenApiSpec = {
           created_at: { type: "integer" },
           updated_at: { type: "integer" }
         },
-        required: ["id", "station_callsign", "call", "qso_date", "time_on", "band", "mode", "version"]
+        required: [
+          "id",
+          "station_id",
+          "station_callsign",
+          "call",
+          "qso_date",
+          "time_on",
+          "band",
+          "mode",
+          "submode",
+          "freq_mhz",
+          "rst_sent",
+          "rst_rcvd",
+          "gridsquare",
+          "name",
+          "qth",
+          "comment",
+          "version",
+          "deleted_at",
+          "created_at",
+          "updated_at"
+        ]
       },
       StationInput: {
         type: "object",
@@ -611,7 +714,17 @@ export const myqslOpenApiSpec = {
           created_at: { type: "integer" },
           updated_at: { type: "integer" }
         },
-        required: ["id", "name", "schema_version", "base_width", "base_height", "layout_json", "version"]
+        required: [
+          "id",
+          "name",
+          "schema_version",
+          "base_width",
+          "base_height",
+          "layout_json",
+          "background_r2_key",
+          "background_sha256",
+          "version"
+        ]
       },
       CardRow: {
         type: "object",
@@ -630,7 +743,7 @@ export const myqslOpenApiSpec = {
           created_at: { type: "integer" },
           updated_at: { type: "integer" }
         },
-        required: ["id", "public_id", "qso_id", "template_id", "status"]
+        required: ["id", "public_id", "qso_id", "template_id", "status", "created_at", "updated_at"]
       },
       PublicCardSummary: {
         type: "object",
