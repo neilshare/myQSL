@@ -3,7 +3,6 @@ import type { AdifRecord } from "@myqsl/adif-codec";
 export const CORE_ADIF_FIELDS = new Set([
   "CALL",
   "STATION_CALLSIGN",
-  "OPERATOR_CALLSIGN",
   "QSO_DATE",
   "TIME_ON",
   "BAND",
@@ -37,6 +36,13 @@ export function recordToQso(record: AdifRecord): Record<string, unknown> {
     }
   }
 
+  let freqMhz: string | undefined;
+  if (core.freq) {
+    freqMhz = String(core.freq);
+  } else if (core.freq_hz) {
+    freqMhz = (Number(core.freq_hz) / 1_000_000).toFixed(6).replace(/\.?0+$/, "");
+  }
+
   return {
     station_callsign: String(core.station_callsign ?? ""),
     call: String(core.call ?? ""),
@@ -55,38 +61,68 @@ export function recordToQso(record: AdifRecord): Record<string, unknown> {
     my_rig: core.my_rig ? String(core.my_rig) : undefined,
     my_antenna: core.my_antenna ? String(core.my_antenna) : undefined,
     my_power_w: core.my_power_w ? Number(core.my_power_w) : undefined,
-    freq_hz: core.freq_hz
-      ? Number(core.freq_hz)
-      : core.freq
-        ? Math.round(Number(core.freq) * 1_000_000)
-        : undefined,
+    freq_mhz: freqMhz,
     adif_extra: extra
   };
 }
 
 export function qsoToAdifRecord(row: Record<string, unknown>): AdifRecord {
   const fields: Record<string, string> = {};
-  const ignored = new Set([
-    "id",
-    "station_id",
-    "version",
-    "qso_at",
-    "duplicate_ordinal",
-    "source",
-    "deleted_at",
-    "created_at",
-    "updated_at",
-    "dedupe_key",
-    "adif_extra",
-    "adif_extra_json"
-  ]);
 
-  for (const [key, value] of Object.entries(row)) {
-    if (value !== null && value !== undefined && !ignored.has(key)) {
-      fields[key.toUpperCase()] = String(value);
+  // 1. Core fields first in canonical order
+  const CORE_ORDER = [
+    "CALL",
+    "STATION_CALLSIGN",
+    "QSO_DATE",
+    "TIME_ON",
+    "BAND",
+    "MODE",
+    "SUBMODE",
+    "FREQ",
+    "FREQ_HZ",
+    "RST_SENT",
+    "RST_RCVD",
+    "GRIDSQUARE",
+    "NAME",
+    "QTH",
+    "COMMENT"
+  ];
+
+  let freqMhz: string | undefined;
+  let freqHz: string | undefined;
+  if (row.freq_hz != null) {
+    freqHz = String(row.freq_hz);
+    freqMhz = (Number(row.freq_hz) / 1_000_000).toFixed(6).replace(/\.?0+$/, "");
+  } else if (row.freq_mhz != null) {
+    freqMhz = String(row.freq_mhz);
+    freqHz = String(Math.round(Number(row.freq_mhz) * 1_000_000));
+  }
+
+  for (const field of CORE_ORDER) {
+    if (field === "FREQ" && freqMhz) {
+      fields.FREQ = freqMhz;
+    } else if (field === "FREQ_HZ" && freqHz) {
+      fields.FREQ_HZ = freqHz;
+    } else {
+      const lower = field.toLowerCase();
+      const val = row[lower];
+      if (val !== null && val !== undefined && val !== "") {
+        fields[field] = String(val);
+      }
     }
   }
 
+  // 2. Station & MY_* fields
+  const MY_FIELDS = ["MY_GRID", "MY_RIG", "MY_ANTENNA", "MY_POWER_W"];
+  for (const field of MY_FIELDS) {
+    const lower = field.toLowerCase();
+    const val = row[lower];
+    if (val !== null && val !== undefined && val !== "") {
+      fields[field] = String(val);
+    }
+  }
+
+  // 3. Extra ADIF tags from adif_extra_json or adif_extra
   let extra: Record<string, unknown> = {};
   if (typeof row.adif_extra_json === "string") {
     try {
@@ -96,9 +132,11 @@ export function qsoToAdifRecord(row: Record<string, unknown>): AdifRecord {
     extra = row.adif_extra as Record<string, unknown>;
   }
 
-  for (const [k, v] of Object.entries(extra)) {
-    if (v !== null && v !== undefined) {
-      fields[k.toUpperCase()] = String(v);
+  for (const key of Object.keys(extra).sort()) {
+    const val = extra[key];
+    const upper = key.toUpperCase();
+    if (val !== null && val !== undefined && !fields[upper]) {
+      fields[upper] = String(val);
     }
   }
 
