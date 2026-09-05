@@ -2,6 +2,7 @@ import { useState, useEffect, type FormEvent } from "react";
 import { api } from "../../lib/api-client";
 import { useI18n } from "../../lib/i18n";
 import {
+  COMMON_BANDS,
   TOP_10_DEFAULT_FREQS,
   getBandFromFreq,
   getDefaultFreqForBand,
@@ -304,16 +305,49 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
             placeholder="HHMMSS"
           />
         </div>
-        <label>
-          {bandLabel}
+        <div>
+          <label htmlFor="qso-band-input" style={{ display: "block", marginBottom: "0.25rem", fontWeight: 500 }}>
+            {bandLabel}
+          </label>
           <input
+            id="qso-band-input"
             aria-label={bandLabel}
+            list="band-presets-list"
             value={value.band}
             onChange={(event) => handleBandChange(event.target.value)}
             required
-            placeholder={locale === "zh" ? "例如 20M, 40M, 70CM" : "e.g. 20M, 40M, 70CM"}
+            placeholder={locale === "zh" ? "例如 2M, 70CM, 20M, 40M" : "e.g. 2M, 70CM, 20M, 40M"}
           />
-        </label>
+          <datalist id="band-presets-list">
+            {COMMON_BANDS.map((b) => (
+              <option key={b.band} value={b.band}>
+                {b.label}
+              </option>
+            ))}
+          </datalist>
+          <select
+            aria-label={locale === "zh" ? "选择常用波段" : "Select Common Band"}
+            value={COMMON_BANDS.some((b) => b.band.toUpperCase() === (value.band || "").trim().toUpperCase()) ? (value.band || "").trim().toUpperCase() : ""}
+            onChange={(event) => {
+              if (event.target.value) handleBandChange(event.target.value);
+            }}
+            style={{
+              marginTop: "0.35rem",
+              fontSize: "0.8rem",
+              padding: "0.3rem 0.5rem",
+              minHeight: "34px",
+              color: "var(--text-muted)",
+              backgroundColor: "var(--bg-input)"
+            }}
+          >
+            <option value="">{locale === "zh" ? "▼ 快捷选择波段" : "▼ Quick Select Band"}</option>
+            {COMMON_BANDS.map((b) => (
+              <option key={`band-opt-${b.band}`} value={b.band}>
+                {b.label}
+              </option>
+            ))}
+          </select>
+        </div>
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
             <label htmlFor="qso-freq-input" style={{ margin: 0, fontWeight: 500 }}>
@@ -348,7 +382,7 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
           </datalist>
           <select
             aria-label={t("qsos.freqSelect")}
-            value=""
+            value={value.freq_mhz ?? ""}
             onChange={(event) => handleSelectFreq(event.target.value)}
             style={{
               marginTop: "0.35rem",
@@ -359,8 +393,27 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
               backgroundColor: "var(--bg-input)"
             }}
           >
-            <option value="">{locale === "zh" ? "▼ 快捷选择常用/中继/历史频率" : "▼ Quick Select Common/Repeater/History"}</option>
-            <optgroup label={locale === "zh" ? "常用中继与推荐频点" : "Common Repeaters & Frequencies"}>
+            <option value="">{locale === "zh" ? "▼ 快捷选择常用/中继/历史频率" : "▼ Quick Select Frequency"}</option>
+            {value.freq_mhz &&
+              !TOP_10_DEFAULT_FREQS.some((p) => p.freq === value.freq_mhz) &&
+              !freqHistory.includes(value.freq_mhz) && (
+                <option value={value.freq_mhz}>
+                  {locale === "zh" ? `当前频率: ${value.freq_mhz} MHz` : `Current: ${value.freq_mhz} MHz`}
+                </option>
+              )}
+            {value.band &&
+              TOP_10_DEFAULT_FREQS.filter((p) => p.band.toUpperCase() === value.band.trim().toUpperCase()).length > 0 && (
+                <optgroup label={locale === "zh" ? `当前【${value.band.trim().toUpperCase()}】波段频点` : `Frequencies for ${value.band.trim().toUpperCase()}`}>
+                  {TOP_10_DEFAULT_FREQS
+                    .filter((p) => p.band.toUpperCase() === value.band.trim().toUpperCase())
+                    .map((p) => (
+                      <option key={`matched-${p.freq}`} value={p.freq}>
+                        {p.label}
+                      </option>
+                    ))}
+                </optgroup>
+              )}
+            <optgroup label={locale === "zh" ? "全部常用中继与推荐频点" : "Common Repeaters & Frequencies"}>
               {TOP_10_DEFAULT_FREQS.map((p) => (
                 <option key={`select-${p.freq}`} value={p.freq}>
                   {p.label}

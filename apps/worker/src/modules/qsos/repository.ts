@@ -83,7 +83,28 @@ export class QsoRepository {
       `INSERT INTO qsos (station_id, station_callsign, call, qso_date, time_on, qso_at, band, freq_hz, mode, submode, rst_sent, rst_rcvd, gridsquare, name, qth, comment, adif_extra_json, dedupe_key, duplicate_ordinal, source, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`
     ).bind(
-      input.station_id, input.station_callsign, input.call, input.qso_date, input.time_on, input.qso_at, input.band, input.freq_hz, input.mode, input.submode, input.rst_sent, input.rst_rcvd, input.gridsquare, input.name, input.qth, input.comment, input.adif_extra_json, input.dedupe_key, input.duplicate_ordinal, input.source, input.created_at, input.updated_at
+      input.station_id,
+      input.station_callsign,
+      input.call,
+      input.qso_date,
+      input.time_on,
+      input.qso_at,
+      input.band,
+      input.freq_hz ?? null,
+      input.mode,
+      input.submode ?? null,
+      input.rst_sent ?? null,
+      input.rst_rcvd ?? null,
+      input.gridsquare ?? null,
+      input.name ?? null,
+      input.qth ?? null,
+      input.comment ?? null,
+      input.adif_extra_json ?? "{}",
+      input.dedupe_key,
+      input.duplicate_ordinal ?? 0,
+      input.source ?? "manual",
+      input.created_at,
+      input.updated_at
     );
 
     if (auditEvent) {
@@ -91,13 +112,13 @@ export class QsoRepository {
       const auditStmt = this.db.prepare(
         "INSERT INTO audit_events (actor, action, entity, entity_id, request_id, detail_json, ip_hash, created_at) SELECT ?, ?, ?, last_insert_rowid(), ?, ?, ?, ?"
       ).bind(
-        auditEvent.actor,
-        auditEvent.action,
-        auditEvent.entity,
-        auditEvent.requestId,
+        auditEvent.actor ?? "unknown",
+        auditEvent.action ?? "unknown",
+        auditEvent.entity ?? "qso",
+        auditEvent.requestId ?? "unknown",
         detailJson,
         auditEvent.ipHash ?? null,
-        auditEvent.createdAt
+        auditEvent.createdAt ?? Date.now()
       );
       const results = await this.db.batch([insertStmt, auditStmt]);
       const insertResult = results[0] as D1Result<Record<string, unknown>>;

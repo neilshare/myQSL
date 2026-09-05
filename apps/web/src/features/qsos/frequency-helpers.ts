@@ -117,3 +117,18 @@ export function getDefaultFreqForBand(bandStr: string): string | null {
       return null;
   }
 }
+
+export const COMMON_BANDS = [
+  { band: "2M", label: "2M (144-148 MHz / V段)" },
+  { band: "70CM", label: "70CM (430-440 MHz / U段)" },
+  { band: "40M", label: "40M (7.0-7.3 MHz 短波)" },
+  { band: "20M", label: "20M (14.0-14.35 MHz 短波)" },
+  { band: "15M", label: "15M (21.0-21.45 MHz 短波)" },
+  { band: "10M", label: "10M (28.0-29.7 MHz 短波)" },
+  { band: "6M", label: "6M (50-54 MHz 魔法波段)" },
+  { band: "80M", label: "80M (3.5-4.0 MHz 短波)" },
+  { band: "160M", label: "160M (1.8-2.0 MHz 顶波)" },
+  { band: "1.25M", label: "1.25M (222-225 MHz)" },
+  { band: "23CM", label: "23CM (1240-1300 MHz 微波)" }
+];
+

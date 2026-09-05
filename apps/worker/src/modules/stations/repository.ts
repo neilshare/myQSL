@@ -60,7 +60,19 @@ export class StationRepository {
       this.db.prepare(
         `INSERT INTO stations (callsign, station_callsign, operator_callsign, grid_square, qth, rig, antenna, power_w, is_default, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`
-      ).bind(input.callsign, input.station_callsign, input.operator_callsign, input.grid_square, input.qth, input.rig, input.antenna, input.power_w, input.is_default ? 1 : 0, input.created_at, input.updated_at)
+      ).bind(
+        input.callsign,
+        input.station_callsign ?? null,
+        input.operator_callsign ?? null,
+        input.grid_square ?? null,
+        input.qth ?? null,
+        input.rig ?? null,
+        input.antenna ?? null,
+        input.power_w ?? null,
+        input.is_default ? 1 : 0,
+        input.created_at,
+        input.updated_at
+      )
     );
     const results = await this.db.batch(statements);
     const insertResult = results[results.length - 1] as D1Result<Record<string, unknown>>;
@@ -83,7 +95,20 @@ export class StationRepository {
       this.db.prepare(
         `UPDATE stations SET callsign = ?, station_callsign = ?, operator_callsign = ?, grid_square = ?, qth = ?, rig = ?, antenna = ?, power_w = ?, is_default = ?, version = version + 1, updated_at = ?
          WHERE id = ? AND version = ?`
-      ).bind(input.callsign, input.station_callsign, input.operator_callsign, input.grid_square, input.qth, input.rig, input.antenna, input.power_w, input.is_default ? 1 : 0, now, id, version)
+      ).bind(
+        input.callsign,
+        input.station_callsign ?? null,
+        input.operator_callsign ?? null,
+        input.grid_square ?? null,
+        input.qth ?? null,
+        input.rig ?? null,
+        input.antenna ?? null,
+        input.power_w ?? null,
+        input.is_default ? 1 : 0,
+        now,
+        id,
+        version
+      )
     );
     const results = await this.db.batch(statements);
     const updateResult = results[results.length - 1] as D1Result;
