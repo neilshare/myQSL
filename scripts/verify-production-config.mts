@@ -9,6 +9,7 @@ export interface ProductionConfigTarget {
   accessAud?: string;
   testAuthEnabled?: string;
   d1DatabaseId?: string;
+  backupDatabaseId?: string;
   hasDbBinding?: boolean;
   hasMediaBinding?: boolean;
   hasRateLimiterBinding?: boolean;
@@ -25,7 +26,6 @@ export interface ValidationIssue {
 
 export const DEFAULT_REQUIRED_SECRETS = [
   "D1_REST_API_TOKEN",
-  "ACCESS_AUD",
   "RATE_LIMIT_SALT"
 ];
 
@@ -62,8 +62,10 @@ export function validateProductionConfig(target: ProductionConfigTarget): {
     }
   }
 
-  // 3. ACCESS_TEAM_DOMAIN check
-  if (target.accessTeamDomain) {
+  // 3. ACCESS_TEAM_DOMAIN check (Required in production)
+  if (!target.accessTeamDomain) {
+    issues.push({ field: "ACCESS_TEAM_DOMAIN", message: "ACCESS_TEAM_DOMAIN is required in production", severity: "error" });
+  } else {
     try {
       const url = new URL(target.accessTeamDomain);
       if (url.protocol !== "https:") {
@@ -77,11 +79,9 @@ export function validateProductionConfig(target: ProductionConfigTarget): {
     }
   }
 
-  // 4. ACCESS_AUD check
-  if (target.accessAud !== undefined) {
-    if (!target.accessAud || target.accessAud === "local-development-audience") {
-      issues.push({ field: "ACCESS_AUD", message: "ACCESS_AUD must be configured with a production audience (received placeholder or empty)", severity: "error" });
-    }
+  // 4. ACCESS_AUD check (Required in production, non-empty, non-placeholder)
+  if (!target.accessAud || target.accessAud === "local-development-audience") {
+    issues.push({ field: "ACCESS_AUD", message: "ACCESS_AUD is required in production and must not be placeholder ('local-development-audience')", severity: "error" });
   }
 
   // 5. D1 database_id check (no placeholder UUID)
@@ -93,12 +93,21 @@ export function validateProductionConfig(target: ProductionConfigTarget): {
     issues.push({ field: "D1_DATABASE_ID", message: `D1 database_id is not a valid UUID: '${target.d1DatabaseId}'`, severity: "error" });
   }
 
-  // 6. TEST_AUTH_ENABLED check
+  // 6. D1 backup database ID consistency check
+  if (target.backupDatabaseId && target.d1DatabaseId && target.backupDatabaseId !== target.d1DatabaseId) {
+    issues.push({
+      field: "D1_BACKUP_DATABASE_ID",
+      message: `D1 backup database ID '${target.backupDatabaseId}' does not match D1 binding database ID '${target.d1DatabaseId}'`,
+      severity: "error"
+    });
+  }
+
+  // 7. TEST_AUTH_ENABLED check
   if (target.testAuthEnabled === "1") {
     issues.push({ field: "TEST_AUTH_ENABLED", message: "TEST_AUTH_ENABLED must be '0' or unset in production", severity: "error" });
   }
 
-  // 7. Core Bindings check (DB, MEDIA, PUBLIC_RATE_LIMITER, D1_BACKUP_WORKFLOW)
+  // 8. Core Bindings check (DB, MEDIA, PUBLIC_RATE_LIMITER, D1_BACKUP_WORKFLOW)
   if (target.hasDbBinding === false) {
     issues.push({ field: "BINDING:DB", message: "D1 database binding 'DB' is missing in production configuration", severity: "error" });
   }
@@ -112,9 +121,17 @@ export function validateProductionConfig(target: ProductionConfigTarget): {
     issues.push({ field: "BINDING:D1_BACKUP_WORKFLOW", message: "Workflow binding 'D1_BACKUP_WORKFLOW' is missing in production configuration", severity: "error" });
   }
 
-  // 8. Secrets check (Fail-Closed: empty array means all required secrets missing)
-  const required = target.requiredSecrets ?? DEFAULT_REQUIRED_SECRETS;
-  if (target.existingSecrets !== undefined) {
+  // 9. Secrets check (Fail-Closed: undefined or missing required secrets fail)
+  if (target.existingSecrets === undefined) {
+    if (target.appEnv === "production") {
+      issues.push({
+        field: "SECRETS",
+        message: "Production secrets status is unknown or verification was skipped (fail-closed)",
+        severity: "error"
+      });
+    }
+  } else {
+    const required = target.requiredSecrets ?? DEFAULT_REQUIRED_SECRETS;
     for (const secret of required) {
       if (!target.existingSecrets.includes(secret)) {
         issues.push({ field: `SECRET:${secret}`, message: `Required production secret '${secret}' is missing`, severity: "error" });
@@ -163,6 +180,17 @@ async function runCli(): Promise<void> {
   const isDryRun = args.includes("--dry-run");
   const skipSecrets = args.includes("--skip-secrets") || process.env.SKIP_REMOTE_SECRETS === "1";
 
+  if (isStrict) {
+    if (isDryRun) {
+      console.error("❌ Fatal: --dry-run is strictly prohibited when --strict mode is enabled.");
+      process.exit(1);
+    }
+    if (skipSecrets) {
+      console.error("❌ Fatal: Skipping secrets (--skip-secrets / SKIP_REMOTE_SECRETS) is strictly prohibited when --strict mode is enabled.");
+      process.exit(1);
+    }
+  }
+
   console.log("🔍 Checking myQSL production deployment preflight configuration...");
 
   let wranglerRaw = "";
@@ -186,31 +214,37 @@ async function runCli(): Promise<void> {
   }
 
   const vars = wrangler.vars ?? {};
-  const d1Binding = wrangler.d1_databases?.[0];
+  // Binding MUST be looked up by binding === "DB"
+  const d1Binding = wrangler.d1_databases?.find((d: any) => d.binding === "DB");
 
+  // Lock target configuration to wrangler.jsonc values; do not allow process.env to mask errors in wrangler.jsonc!
   const target: ProductionConfigTarget = {
-    appEnv: process.env.APP_ENV ?? vars.APP_ENV,
-    publicOrigin: process.env.PUBLIC_ORIGIN ?? vars.PUBLIC_ORIGIN,
-    accessTeamDomain: process.env.ACCESS_TEAM_DOMAIN ?? vars.ACCESS_TEAM_DOMAIN,
-    accessAud: process.env.ACCESS_AUD ?? vars.ACCESS_AUD,
-    testAuthEnabled: process.env.TEST_AUTH_ENABLED ?? vars.TEST_AUTH_ENABLED,
-    d1DatabaseId: process.env.D1_DATABASE_ID ?? d1Binding?.database_id,
-    hasDbBinding: Boolean(wrangler.d1_databases?.some((d: any) => d.binding === "DB")),
+    appEnv: vars.APP_ENV ?? process.env.APP_ENV,
+    publicOrigin: vars.PUBLIC_ORIGIN ?? process.env.PUBLIC_ORIGIN,
+    accessTeamDomain: vars.ACCESS_TEAM_DOMAIN ?? process.env.ACCESS_TEAM_DOMAIN,
+    accessAud: vars.ACCESS_AUD ?? process.env.ACCESS_AUD,
+    testAuthEnabled: vars.TEST_AUTH_ENABLED ?? process.env.TEST_AUTH_ENABLED,
+    d1DatabaseId: d1Binding?.database_id,
+    backupDatabaseId: process.env.D1_BACKUP_DATABASE_ID ?? process.env.D1_DATABASE_ID ?? d1Binding?.database_id,
+    hasDbBinding: Boolean(d1Binding),
     hasMediaBinding: Boolean(wrangler.r2_buckets?.some((b: any) => b.binding === "MEDIA")),
     hasRateLimiterBinding: Boolean(wrangler.ratelimits?.some((r: any) => r.name === "PUBLIC_RATE_LIMITER")),
     hasBackupWorkflowBinding: Boolean(wrangler.workflows?.some((w: any) => w.binding === "D1_BACKUP_WORKFLOW")),
     requiredSecrets: DEFAULT_REQUIRED_SECRETS
   };
 
-  const remoteSecrets = skipSecrets ? null : fetchRemoteSecrets();
-  if (remoteSecrets !== null) {
-    target.existingSecrets = remoteSecrets;
-    console.log(`🔐 Found ${remoteSecrets.length} remote secret(s) in Cloudflare.`);
-  } else if (skipSecrets) {
+  if (skipSecrets) {
     console.log("ℹ️ Remote secrets check explicitly skipped via flag or SKIP_REMOTE_SECRETS.");
+    target.existingSecrets = undefined;
   } else {
-    console.error("❌ Remote secrets could not be retrieved via wrangler CLI (fail-closed). Missing secrets will be enforced.");
-    target.existingSecrets = [];
+    const remoteSecrets = fetchRemoteSecrets();
+    if (remoteSecrets !== null) {
+      target.existingSecrets = remoteSecrets;
+      console.log(`🔐 Found ${remoteSecrets.length} remote secret(s) in Cloudflare.`);
+    } else {
+      console.error("❌ Remote secrets could not be retrieved via wrangler CLI (fail-closed). Missing secrets will be enforced.");
+      target.existingSecrets = [];
+    }
   }
 
   const result = validateProductionConfig(target);
@@ -239,11 +273,7 @@ async function runCli(): Promise<void> {
     process.exit(0);
   } else {
     if (isDryRun) {
-      console.log("\n⚠️ Dry run mode enabled: Preflight completed with warnings (exiting 0).");
-      process.exit(0);
-    }
-    if (!isStrict && target.appEnv !== "production") {
-      console.log("\nℹ️ Current target is not production (set APP_ENV=production or --strict to enforce).");
+      console.log("\n⚠️ Dry run mode enabled: Preflight completed with warnings (diagnostic only, exiting 0).");
       process.exit(0);
     }
     console.error("\n❌ Preflight verification failed. Aborting production deployment.");

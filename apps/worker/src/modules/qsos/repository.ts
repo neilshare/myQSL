@@ -1,3 +1,6 @@
+import type { AuditEventInput } from "../../platform/audit";
+import { buildConditionalAuditStatement, sanitizeAuditDetail } from "../../platform/audit";
+
 export interface QsoRow {
   id: number;
   station_id: number;
@@ -75,12 +78,35 @@ export class QsoRepository {
     return Number(row?.next_ordinal ?? 0);
   }
 
-  async insert(input: QsoInsert): Promise<QsoRow> {
-    await this.db.prepare(
+  async insert(input: QsoInsert, auditEvent?: AuditEventInput): Promise<QsoRow> {
+    const insertStmt = this.db.prepare(
       `INSERT INTO qsos (station_id, station_callsign, call, qso_date, time_on, qso_at, band, freq_hz, mode, submode, rst_sent, rst_rcvd, gridsquare, name, qth, comment, adif_extra_json, dedupe_key, duplicate_ordinal, source, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).bind(input.station_id, input.station_callsign, input.call, input.qso_date, input.time_on, input.qso_at, input.band, input.freq_hz, input.mode, input.submode, input.rst_sent, input.rst_rcvd, input.gridsquare, input.name, input.qth, input.comment, input.adif_extra_json, input.dedupe_key, input.duplicate_ordinal, input.source, input.created_at, input.updated_at).run();
-    const row = await this.db.prepare("SELECT * FROM qsos WHERE rowid = last_insert_rowid()").first<Record<string, unknown>>();
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`
+    ).bind(
+      input.station_id, input.station_callsign, input.call, input.qso_date, input.time_on, input.qso_at, input.band, input.freq_hz, input.mode, input.submode, input.rst_sent, input.rst_rcvd, input.gridsquare, input.name, input.qth, input.comment, input.adif_extra_json, input.dedupe_key, input.duplicate_ordinal, input.source, input.created_at, input.updated_at
+    );
+
+    if (auditEvent) {
+      const detailJson = JSON.stringify(sanitizeAuditDetail(auditEvent.detail ?? {}));
+      const auditStmt = this.db.prepare(
+        "INSERT INTO audit_events (actor, action, entity, entity_id, request_id, detail_json, ip_hash, created_at) SELECT ?, ?, ?, last_insert_rowid(), ?, ?, ?, ?"
+      ).bind(
+        auditEvent.actor,
+        auditEvent.action,
+        auditEvent.entity,
+        auditEvent.requestId,
+        detailJson,
+        auditEvent.ipHash ?? null,
+        auditEvent.createdAt
+      );
+      const results = await this.db.batch([insertStmt, auditStmt]);
+      const insertResult = results[0] as D1Result<Record<string, unknown>>;
+      const row = insertResult.results?.[0];
+      if (!row) throw new Error("QSO insert returned no row");
+      return mapRow(row);
+    }
+
+    const row = await insertStmt.first<Record<string, unknown>>();
     if (!row) throw new Error("QSO insert returned no row");
     return mapRow(row);
   }
@@ -133,24 +159,59 @@ export class QsoRepository {
     return result.results.map(mapRow);
   }
 
-  async updateIfVersion(id: number, version: number, patch: Record<string, unknown>, now: number): Promise<QsoRow | null> {
-    const allowed = ["comment", "name", "qth", "rst_sent", "rst_rcvd", "gridsquare", "freq_hz", "band", "mode", "submode"];
+  async updateIfVersion(id: number, version: number, patch: Record<string, unknown>, now: number, auditEvent?: AuditEventInput): Promise<QsoRow | null> {
+    const allowed = ["comment", "name", "qth", "rst_sent", "rst_rcvd", "gridsquare", "freq_hz", "band", "mode", "submode", "dedupe_key", "adif_extra_json"];
     const entries = Object.entries(patch).filter(([key]) => allowed.includes(key));
     if (!entries.length) return this.findById(id);
     const assignments = entries.map(([key]) => `${key} = ?`).join(", ");
-    const values = entries.map(([, value]) => value == null ? null : String(value));
-    const result = await this.db.prepare(`UPDATE qsos SET ${assignments}, version = version + 1, updated_at = ? WHERE id = ? AND version = ? AND deleted_at IS NULL`).bind(...values, now, id, version).run();
+    const values = entries.map(([, value]) => value == null ? null : (typeof value === "number" ? value : String(value)));
+    const updateStmt = this.db.prepare(
+      `UPDATE qsos SET ${assignments}, version = version + 1, updated_at = ? WHERE id = ? AND version = ? AND deleted_at IS NULL`
+    ).bind(...values, now, id, version);
+
+    if (auditEvent) {
+      const auditStmt = buildConditionalAuditStatement(this.db, auditEvent);
+      const results = await this.db.batch([updateStmt, auditStmt]);
+      const updateResult = results[0] as D1Result<unknown>;
+      if (!updateResult.success || !updateResult.meta?.changes) return null;
+      return this.findById(id);
+    }
+
+    const result = await updateStmt.run();
     if (!result.meta.changes) return null;
     return this.findById(id);
   }
 
-  async trash(id: number, version: number, now: number): Promise<boolean> {
-    const result = await this.db.prepare("UPDATE qsos SET deleted_at = ?, version = version + 1, updated_at = ? WHERE id = ? AND version = ? AND deleted_at IS NULL").bind(now, now, id, version).run();
+  async trash(id: number, version: number, now: number, auditEvent?: AuditEventInput): Promise<boolean> {
+    const trashStmt = this.db.prepare(
+      "UPDATE qsos SET deleted_at = ?, version = version + 1, updated_at = ? WHERE id = ? AND version = ? AND deleted_at IS NULL"
+    ).bind(now, now, id, version);
+
+    if (auditEvent) {
+      const auditStmt = buildConditionalAuditStatement(this.db, auditEvent);
+      const results = await this.db.batch([trashStmt, auditStmt]);
+      const trashResult = results[0] as D1Result<unknown>;
+      return Boolean(trashResult.success && trashResult.meta?.changes);
+    }
+
+    const result = await trashStmt.run();
     return Boolean(result.meta.changes);
   }
 
-  async restore(id: number, now: number): Promise<QsoRow | null> {
-    const result = await this.db.prepare("UPDATE qsos SET deleted_at = NULL, version = version + 1, updated_at = ? WHERE id = ? AND deleted_at IS NOT NULL").bind(now, id).run();
+  async restore(id: number, now: number, auditEvent?: AuditEventInput): Promise<QsoRow | null> {
+    const restoreStmt = this.db.prepare(
+      "UPDATE qsos SET deleted_at = NULL, version = version + 1, updated_at = ? WHERE id = ? AND deleted_at IS NOT NULL"
+    ).bind(now, id);
+
+    if (auditEvent) {
+      const auditStmt = buildConditionalAuditStatement(this.db, auditEvent);
+      const results = await this.db.batch([restoreStmt, auditStmt]);
+      const restoreResult = results[0] as D1Result<unknown>;
+      if (!restoreResult.success || !restoreResult.meta?.changes) return null;
+      return this.findById(id);
+    }
+
+    const result = await restoreStmt.run();
     if (!result.meta.changes) return null;
     return this.findById(id);
   }

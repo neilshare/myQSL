@@ -1,14 +1,13 @@
 import type { Hono } from "hono";
 import { z } from "zod";
-import { decodeCursor, encodeCursor, QsoInputSchema } from "@myqsl/domain";
+import { decodeCursor, encodeCursor, QsoInputSchema, QsoPatchSchema } from "@myqsl/domain";
 import type { Env } from "../../env";
 import type { RequestVariables } from "../../platform/request-context";
 import { problem } from "../../platform/problem";
 import { StationRepository } from "../stations/repository";
 import { QsoRepository } from "./repository";
-import { DuplicateQsoError, QsoNotFoundError, QsoService } from "./service";
+import { DuplicateQsoError, PreconditionError, QsoNotFoundError, QsoService } from "./service";
 import { toQsoResponse } from "./mapper";
-import { AuditWriter } from "../../platform/audit";
 
 const idSchema = z.coerce.number().int().positive();
 const listSchema = z.object({
@@ -30,21 +29,27 @@ export function registerQsoRoutes(app: Hono<{ Bindings: Env; Variables: RequestV
   app.post("/api/v1/qsos", async (c) => {
     try {
       const body = await c.req.json() as Record<string, unknown>;
-      const result = await service(c).create(QsoInputSchema.parse(body), { preserve_duplicate: body.preserve_duplicate === true, duplicate_reason: typeof body.duplicate_reason === "string" ? body.duplicate_reason : undefined });
-      const audit = new AuditWriter(c.env.DB);
-      await audit.append({
+      const auditContext = {
         actor: c.get("actor") ?? "unknown",
-        action: "create_qso",
-        entity: "qso",
-        entityId: String(result.qso.id),
-        requestId: c.get("requestId") ?? "unknown",
-        detail: { call: result.qso.call, band: result.qso.band, mode: result.qso.mode },
-        createdAt: Date.now()
-      });
+        requestId: c.get("requestId") ?? "unknown"
+      };
+      const result = await service(c).create(
+        QsoInputSchema.parse(body),
+        {
+          preserve_duplicate: body.preserve_duplicate === true,
+          duplicate_reason: typeof body.duplicate_reason === "string" ? body.duplicate_reason : undefined
+        },
+        auditContext
+      );
       c.header("ETag", etag(result.qso));
       return c.json({ data: toQsoResponse(result.qso) }, 201);
     } catch (error) {
-      if (error instanceof DuplicateQsoError) return new Response(JSON.stringify({ type: "https://myqsl.app/problems/duplicate", title: "Duplicate QSO", status: 409, detail: error.message, duplicate_of: error.duplicateOf }), { status: 409, headers: { "Content-Type": "application/problem+json; charset=utf-8", "Cache-Control": "no-store" } });
+      if (error instanceof DuplicateQsoError) {
+        return new Response(
+          JSON.stringify({ type: "https://myqsl.app/problems/duplicate", title: "Duplicate QSO", status: 409, detail: error.message, duplicate_of: error.duplicateOf }),
+          { status: 409, headers: { "Content-Type": "application/problem+json; charset=utf-8", "Cache-Control": "no-store" } }
+        );
+      }
       return validation(error, c.req.path);
     }
   });
@@ -88,11 +93,24 @@ export function registerQsoRoutes(app: Hono<{ Bindings: Env; Variables: RequestV
     const match = c.req.header("If-Match")?.match(/^W\/"qso-(\d+)-(\d+)"$/u);
     if (!id.success || !match) return problem(412, "https://myqsl.app/problems/precondition", "Precondition required", "A current QSO ETag is required", c.req.path);
     try {
-      const row = await service(c).update(id.data, Number(match[2]), await c.req.json());
+      const body = await c.req.json();
+      const patch = QsoPatchSchema.parse(body);
+      const auditContext = {
+        actor: c.get("actor") ?? "unknown",
+        requestId: c.get("requestId") ?? "unknown"
+      };
+      const row = await service(c).update(id.data, Number(match[2]), patch, auditContext);
       c.header("ETag", etag(row));
       return c.json({ data: toQsoResponse(row) });
     } catch (error) {
-      if (error instanceof QsoNotFoundError) return problem(412, "https://myqsl.app/problems/stale", "Stale version", "The QSO changed since it was read", c.req.path);
+      if (error instanceof DuplicateQsoError) {
+        return new Response(
+          JSON.stringify({ type: "https://myqsl.app/problems/duplicate", title: "Duplicate QSO", status: 409, detail: error.message, duplicate_of: error.duplicateOf }),
+          { status: 409, headers: { "Content-Type": "application/problem+json; charset=utf-8", "Cache-Control": "no-store" } }
+        );
+      }
+      if (error instanceof QsoNotFoundError) return problem(404, "https://myqsl.app/problems/not-found", "Not found", "QSO not found", c.req.path);
+      if (error instanceof PreconditionError) return problem(412, "https://myqsl.app/problems/stale", "Stale version", error.message, c.req.path);
       return validation(error, c.req.path);
     }
   });
@@ -100,13 +118,33 @@ export function registerQsoRoutes(app: Hono<{ Bindings: Env; Variables: RequestV
     const id = idSchema.safeParse(c.req.param("id"));
     const match = c.req.header("If-Match")?.match(/^W\/"qso-(\d+)-(\d+)"$/u);
     if (!id.success || !match) return problem(412, "https://myqsl.app/problems/precondition", "Precondition required", "A current QSO ETag is required", c.req.path);
-    try { await service(c).trash(id.data, Number(match[2])); return new Response(null, { status: 204 }); }
-    catch { return problem(412, "https://myqsl.app/problems/stale", "Stale version", "The QSO changed since it was read", c.req.path); }
+    const auditContext = {
+      actor: c.get("actor") ?? "unknown",
+      requestId: c.get("requestId") ?? "unknown"
+    };
+    try {
+      await service(c).trash(id.data, Number(match[2]), auditContext);
+      return new Response(null, { status: 204 });
+    } catch (error) {
+      if (error instanceof QsoNotFoundError) return problem(404, "https://myqsl.app/problems/not-found", "Not found", "QSO not found", c.req.path);
+      if (error instanceof PreconditionError) return problem(412, "https://myqsl.app/problems/stale", "Stale version", "The QSO changed since it was read", c.req.path);
+      return validation(error, c.req.path);
+    }
   });
   app.post("/api/v1/qsos/:id/restore", async (c) => {
     const id = idSchema.safeParse(c.req.param("id"));
     if (!id.success) return problem(422, "https://myqsl.app/problems/validation", "Validation failed", "Invalid QSO id", c.req.path);
-    try { const row = await service(c).restore(id.data); c.header("ETag", etag(row)); return c.json({ data: toQsoResponse(row) }); }
-    catch { return problem(404, "https://myqsl.app/problems/not-found", "Not found", "Deleted QSO not found", c.req.path); }
+    const auditContext = {
+      actor: c.get("actor") ?? "unknown",
+      requestId: c.get("requestId") ?? "unknown"
+    };
+    try {
+      const row = await service(c).restore(id.data, auditContext);
+      c.header("ETag", etag(row));
+      return c.json({ data: toQsoResponse(row) });
+    } catch (error) {
+      if (error instanceof QsoNotFoundError) return problem(404, "https://myqsl.app/problems/not-found", "Not found", "Deleted QSO not found", c.req.path);
+      return validation(error, c.req.path);
+    }
   });
 }

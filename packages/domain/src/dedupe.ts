@@ -1,6 +1,14 @@
-import type { NormalizedQso } from "./qso";
+export interface DedupeKeyFields {
+  station_callsign: string;
+  call: string;
+  qso_date: string;
+  time_on: string;
+  band: string;
+  mode: string;
+  submode?: string | null;
+}
 
-export async function makeDedupeKey(qso: NormalizedQso): Promise<string> {
+export async function makeDedupeKey(qso: DedupeKeyFields): Promise<string> {
   const canonical = [
     qso.station_callsign,
     qso.call,

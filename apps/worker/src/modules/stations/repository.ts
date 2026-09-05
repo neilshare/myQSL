@@ -46,22 +46,34 @@ export class StationRepository {
 
   async create(input: StationInput & { created_at: number; updated_at: number }): Promise<StationRow> {
     const statements: D1PreparedStatement[] = [];
-    if (input.is_default) statements.push(this.db.prepare("UPDATE stations SET is_default = 0, version = version + 1, updated_at = ? WHERE is_default = 1").bind(input.updated_at));
+    if (input.is_default) {
+      statements.push(
+        this.db.prepare("UPDATE stations SET is_default = 0, version = version + 1, updated_at = ? WHERE is_default = 1").bind(input.updated_at)
+      );
+    }
     statements.push(
       this.db.prepare(
         `INSERT INTO stations (callsign, station_callsign, operator_callsign, grid_square, qth, rig, antenna, power_w, is_default, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`
       ).bind(input.callsign, input.station_callsign, input.operator_callsign, input.grid_square, input.qth, input.rig, input.antenna, input.power_w, input.is_default ? 1 : 0, input.created_at, input.updated_at)
     );
-    await this.db.batch(statements);
-    const row = await this.db.prepare("SELECT * FROM stations WHERE rowid = last_insert_rowid()").first<Record<string, unknown>>();
+    const results = await this.db.batch(statements);
+    const insertResult = results[results.length - 1] as D1Result<Record<string, unknown>>;
+    const row = insertResult.results?.[0];
     if (!row) throw new Error("Station insert returned no row");
     return mapRow(row);
   }
 
   async updateIfVersion(id: number, version: number, input: StationInput, now: number): Promise<StationRow | null> {
     const statements: D1PreparedStatement[] = [];
-    if (input.is_default) statements.push(this.db.prepare("UPDATE stations SET is_default = 0, version = version + 1, updated_at = ? WHERE is_default = 1 AND id != ?").bind(now, id));
+    if (input.is_default) {
+      statements.push(
+        this.db.prepare(
+          `UPDATE stations SET is_default = 0, version = version + 1, updated_at = ?
+           WHERE is_default = 1 AND id != ? AND EXISTS (SELECT 1 FROM stations WHERE id = ? AND version = ?)`
+        ).bind(now, id, id, version)
+      );
+    }
     statements.push(
       this.db.prepare(
         `UPDATE stations SET callsign = ?, station_callsign = ?, operator_callsign = ?, grid_square = ?, qth = ?, rig = ?, antenna = ?, power_w = ?, is_default = ?, version = version + 1, updated_at = ?

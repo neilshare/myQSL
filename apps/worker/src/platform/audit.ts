@@ -41,11 +41,33 @@ export function buildAuditStatement(db: D1Database, event: AuditEventInput): D1P
     );
 }
 
+export function buildConditionalAuditStatement(db: D1Database, event: AuditEventInput): D1PreparedStatement {
+  const detailJson = JSON.stringify(sanitizeAuditDetail(event.detail ?? {}));
+  return db
+    .prepare(
+      "INSERT INTO audit_events (actor, action, entity, entity_id, request_id, detail_json, ip_hash, created_at) SELECT ?, ?, ?, ?, ?, ?, ?, ? WHERE (SELECT changes()) > 0"
+    )
+    .bind(
+      event.actor,
+      event.action,
+      event.entity,
+      event.entityId ?? null,
+      event.requestId,
+      detailJson,
+      event.ipHash ?? null,
+      event.createdAt
+    );
+}
+
 export class AuditWriter {
   constructor(private readonly db: D1Database) {}
 
   buildStatement(event: AuditEventInput): D1PreparedStatement {
     return buildAuditStatement(this.db, event);
+  }
+
+  buildConditionalStatement(event: AuditEventInput): D1PreparedStatement {
+    return buildConditionalAuditStatement(this.db, event);
   }
 
   async append(event: AuditEventInput): Promise<void> {

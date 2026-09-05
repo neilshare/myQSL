@@ -7,9 +7,11 @@ describe("validateProductionConfig", () => {
   const validTarget = {
     appEnv: "production",
     publicOrigin: "https://eqsr.ham.radio",
+    accessTeamDomain: "https://myqsl.cloudflareaccess.com",
+    accessAud: "myqsl-production-audience",
     testAuthEnabled: "0",
     d1DatabaseId: "12345678-1234-1234-1234-123456789abc",
-    existingSecrets: ["D1_REST_API_TOKEN", "ACCESS_AUD", "RATE_LIMIT_SALT"]
+    existingSecrets: ["D1_REST_API_TOKEN", "RATE_LIMIT_SALT"]
   };
 
   it("passes when all production requirements are met", () => {
@@ -54,6 +56,21 @@ describe("validateProductionConfig", () => {
     expect(malformedD1.issues.some((i) => i.field === "D1_DATABASE_ID")).toBe(true);
   });
 
+  it("rejects mismatched D1 backup database ID", () => {
+    const mismatched = validateProductionConfig({
+      ...validTarget,
+      backupDatabaseId: "87654321-4321-4321-4321-cba987654321"
+    });
+    expect(mismatched.valid).toBe(false);
+    expect(mismatched.issues.some((i) => i.field === "D1_BACKUP_DATABASE_ID")).toBe(true);
+
+    const matched = validateProductionConfig({
+      ...validTarget,
+      backupDatabaseId: validTarget.d1DatabaseId
+    });
+    expect(matched.valid).toBe(true);
+  });
+
   it("rejects enabled test auth in production", () => {
     const testAuthOn = validateProductionConfig({
       ...validTarget,
@@ -66,11 +83,19 @@ describe("validateProductionConfig", () => {
   it("rejects when required production secrets are missing from remote list", () => {
     const missingSecret = validateProductionConfig({
       ...validTarget,
-      existingSecrets: ["D1_REST_API_TOKEN"] // ACCESS_AUD & RATE_LIMIT_SALT missing
+      existingSecrets: ["D1_REST_API_TOKEN"] // RATE_LIMIT_SALT missing
     });
     expect(missingSecret.valid).toBe(false);
-    expect(missingSecret.issues.some((i) => i.field === "SECRET:ACCESS_AUD")).toBe(true);
     expect(missingSecret.issues.some((i) => i.field === "SECRET:RATE_LIMIT_SALT")).toBe(true);
+  });
+
+  it("rejects when existingSecrets is undefined in production (fail-closed)", () => {
+    const undefinedSecrets = validateProductionConfig({
+      ...validTarget,
+      existingSecrets: undefined
+    });
+    expect(undefinedSecrets.valid).toBe(false);
+    expect(undefinedSecrets.issues.some((i) => i.field === "SECRETS")).toBe(true);
   });
 
   it("rejects when existingSecrets is an empty array (fail-closed)", () => {
@@ -80,7 +105,6 @@ describe("validateProductionConfig", () => {
     });
     expect(emptySecrets.valid).toBe(false);
     expect(emptySecrets.issues.some((i) => i.field === "SECRET:D1_REST_API_TOKEN")).toBe(true);
-    expect(emptySecrets.issues.some((i) => i.field === "SECRET:ACCESS_AUD")).toBe(true);
     expect(emptySecrets.issues.some((i) => i.field === "SECRET:RATE_LIMIT_SALT")).toBe(true);
   });
 
@@ -102,13 +126,27 @@ describe("validateProductionConfig", () => {
     expect(missingWorkflow.issues.some((i) => i.field === "BINDING:D1_BACKUP_WORKFLOW")).toBe(true);
   });
 
-  it("rejects invalid or placeholder ACCESS configuration", () => {
+  it("rejects missing, invalid or placeholder ACCESS configuration", () => {
+    const missingAccessDomain = validateProductionConfig({
+      ...validTarget,
+      accessTeamDomain: undefined
+    });
+    expect(missingAccessDomain.valid).toBe(false);
+    expect(missingAccessDomain.issues.some((i) => i.field === "ACCESS_TEAM_DOMAIN")).toBe(true);
+
     const invalidAccessUrl = validateProductionConfig({
       ...validTarget,
       accessTeamDomain: "http://myqsl.cloudflareaccess.com"
     });
     expect(invalidAccessUrl.valid).toBe(false);
     expect(invalidAccessUrl.issues.some((i) => i.field === "ACCESS_TEAM_DOMAIN")).toBe(true);
+
+    const missingAud = validateProductionConfig({
+      ...validTarget,
+      accessAud: undefined
+    });
+    expect(missingAud.valid).toBe(false);
+    expect(missingAud.issues.some((i) => i.field === "ACCESS_AUD")).toBe(true);
 
     const placeholderAud = validateProductionConfig({
       ...validTarget,
@@ -122,7 +160,7 @@ describe("validateProductionConfig", () => {
 describe("verify-production-config CLI", () => {
   const scriptPath = resolve(process.cwd(), "scripts/verify-production-config.mts");
 
-  it("exits with 0 in --dry-run mode even with unconfigured values", () => {
+  it("exits with 0 in --dry-run mode without --strict", () => {
     const output = execFileSync(
       "node",
       ["--import", "tsx", scriptPath, "--dry-run", "--skip-secrets"],
@@ -131,26 +169,41 @@ describe("verify-production-config CLI", () => {
     expect(output).toContain("Dry run mode enabled");
   });
 
-  it("exits with 0 when valid production env vars are provided", () => {
-    const output = execFileSync(
-      "node",
-      ["--import", "tsx", scriptPath, "--skip-secrets"],
-      {
-        encoding: "utf8",
-        env: {
-          ...process.env,
-          APP_ENV: "production",
-          PUBLIC_ORIGIN: "https://eqsr.ham.radio",
-          D1_DATABASE_ID: "12345678-1234-1234-1234-123456789abc",
-          TEST_AUTH_ENABLED: "0",
-          SKIP_REMOTE_SECRETS: "1"
-        }
-      }
-    );
-    expect(output).toContain("PRODUCTION_CONFIG_OK");
+  it("fails and exits non-zero if --strict and --dry-run are combined", () => {
+    expect(() => {
+      execFileSync(
+        "node",
+        ["--import", "tsx", scriptPath, "--strict", "--dry-run"],
+        { encoding: "utf8", stdio: "pipe" }
+      );
+    }).toThrow();
   });
 
-  it("fails and exits non-zero when APP_ENV=production but D1 ID is placeholder", () => {
+  it("fails and exits non-zero if --strict and --skip-secrets are combined", () => {
+    expect(() => {
+      execFileSync(
+        "node",
+        ["--import", "tsx", scriptPath, "--strict", "--skip-secrets"],
+        { encoding: "utf8", stdio: "pipe" }
+      );
+    }).toThrow();
+  });
+
+  it("fails and exits non-zero if --strict and SKIP_REMOTE_SECRETS=1 are combined", () => {
+    expect(() => {
+      execFileSync(
+        "node",
+        ["--import", "tsx", scriptPath, "--strict"],
+        {
+          encoding: "utf8",
+          stdio: "pipe",
+          env: { ...process.env, SKIP_REMOTE_SECRETS: "1" }
+        }
+      );
+    }).toThrow();
+  });
+
+  it("fails when wrangler.jsonc contains placeholder D1 ID even if process.env.D1_DATABASE_ID is valid", () => {
     expect(() => {
       execFileSync(
         "node",
@@ -160,11 +213,7 @@ describe("verify-production-config CLI", () => {
           stdio: "pipe",
           env: {
             ...process.env,
-            APP_ENV: "production",
-            PUBLIC_ORIGIN: "https://eqsr.ham.radio",
-            D1_DATABASE_ID: "00000000-0000-0000-0000-000000000001",
-            TEST_AUTH_ENABLED: "0",
-            SKIP_REMOTE_SECRETS: "1"
+            D1_DATABASE_ID: "12345678-1234-1234-1234-123456789abc"
           }
         }
       );
