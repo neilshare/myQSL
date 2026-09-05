@@ -46,11 +46,42 @@ export class QsoService {
     if (options.preserve_duplicate && !options.duplicate_reason?.trim()) {
       throw new Error("duplicate_reason is required");
     }
-    const station = qso.station_id ? await this.stations.findById(qso.station_id) : await this.stations.findDefault();
-    if (!station) throw new Error("A station is required before creating a QSO");
-    if (qso.station_callsign && qso.station_callsign.toUpperCase() !== station.callsign.toUpperCase()) {
-      throw new Error(`station_callsign (${qso.station_callsign}) does not match station (${station.callsign})`);
+    let station = qso.station_id ? await this.stations.findById(qso.station_id) : null;
+    if (!station && qso.station_callsign) {
+      station = await this.stations.findByCallsign(qso.station_callsign);
     }
+    if (!station) {
+      station = await this.stations.findDefault();
+    }
+    if (!station) {
+      const allStations = await this.stations.list();
+      if (allStations.length > 0) {
+        station = allStations[0];
+      } else {
+        const defaultCall = (qso.station_callsign || "DEFAULT").trim().toUpperCase();
+        station = await this.stations.create({
+          callsign: defaultCall,
+          is_default: true,
+          created_at: this.now(),
+          updated_at: this.now()
+        });
+      }
+    }
+
+    if (qso.station_callsign && qso.station_callsign.toUpperCase() !== station.callsign.toUpperCase()) {
+      const matching = await this.stations.findByCallsign(qso.station_callsign);
+      if (matching) {
+        station = matching;
+      } else {
+        station = await this.stations.create({
+          callsign: qso.station_callsign.trim().toUpperCase(),
+          is_default: false,
+          created_at: this.now(),
+          updated_at: this.now()
+        });
+      }
+    }
+
     const stationCallsign = station.callsign.toUpperCase();
     const dedupeKey = await makeDedupeKey({ ...qso, station_callsign: stationCallsign });
     const duplicate = await this.repository.findDuplicate(dedupeKey);

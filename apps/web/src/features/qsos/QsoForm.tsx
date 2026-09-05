@@ -37,8 +37,27 @@ export function getCurrentUtcDateTime(): { qso_date: string; time_on: string } {
   };
 }
 
+const STATION_STORAGE_KEY = "myqsl_station_callsign";
+
+export function getStoredStationCallsign(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return localStorage.getItem(STATION_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function saveStationCallsign(call: string): void {
+  if (typeof window === "undefined" || !call.trim()) return;
+  try {
+    localStorage.setItem(STATION_STORAGE_KEY, call.trim().toUpperCase());
+  } catch {}
+}
+
 export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { initial: QsoFormValue; etag?: string; api?: QsoFormApi; onSaved?: () => void }) {
   const { t, locale } = useI18n();
+  const [stationOptions, setStationOptions] = useState<string[]>([]);
   const [freqHistory, setFreqHistory] = useState<string[]>(() => getStoredFreqHistory());
   const [value, setValue] = useState<QsoFormValue>(() => {
     const utc = getCurrentUtcDateTime();
@@ -47,8 +66,13 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
     if (!initialFreq && initialBand) {
       initialFreq = getDefaultFreqForBand(initialBand) ?? "";
     }
+    const storedStation = getStoredStationCallsign();
+    const effectiveStation = initial.station_callsign && initial.station_callsign !== "BI1ABC"
+      ? initial.station_callsign
+      : (storedStation || initial.station_callsign || "BI1ABC");
     return {
       ...initial,
+      station_callsign: effectiveStation,
       band: initialBand,
       freq_mhz: initialFreq,
       qso_date: initial.qso_date || utc.qso_date,
@@ -63,6 +87,29 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
       setValue(initial);
     }
   }, [initial.id]);
+
+  useEffect(() => {
+    if (!isEditing) {
+      api.stations.list().then((res) => {
+        const raw = res.data;
+        const list = Array.isArray(raw) ? raw : (Array.isArray((raw as any)?.data) ? (raw as any).data : []);
+        if (list.length > 0) {
+          const calls = list.map((s: { callsign: string }) => s.callsign.toUpperCase());
+          setStationOptions(calls);
+          const def = list.find((s: { is_default: boolean | number }) => Boolean(s.is_default)) || list[0];
+          if (def?.callsign) {
+            setValue((prev) => {
+              const stored = getStoredStationCallsign();
+              if (!stored && (prev.station_callsign === "BI1ABC" || !prev.station_callsign)) {
+                return { ...prev, station_callsign: def.callsign };
+              }
+              return prev;
+            });
+          }
+        }
+      }).catch(() => {});
+    }
+  }, [isEditing]);
 
   const handleFreqChange = (newFreq: string) => {
     const detectedBand = getBandFromFreq(newFreq);
@@ -98,6 +145,9 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     try {
+      if (value.station_callsign?.trim()) {
+        saveStationCallsign(value.station_callsign);
+      }
       if (value.freq_mhz && value.freq_mhz.trim()) {
         const updated = saveFreqToHistory(value.freq_mhz);
         setFreqHistory(updated);
@@ -189,10 +239,18 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
             aria-label={stationLabel}
             value={value.station_callsign}
             disabled={isEditing}
-            onChange={(event) => setValue({ ...value, station_callsign: event.target.value })}
+            onChange={(event) => setValue({ ...value, station_callsign: event.target.value.toUpperCase() })}
             required
-            placeholder={locale === "zh" ? "例如 BI1ABC" : "e.g. BI1ABC"}
+            placeholder={locale === "zh" ? "例如 BG4YYY" : "e.g. BG4YYY"}
+            list="station-callsign-options"
           />
+          {stationOptions.length > 0 && (
+            <datalist id="station-callsign-options">
+              {stationOptions.map((c) => (
+                <option key={c} value={c} />
+              ))}
+            </datalist>
+          )}
         </label>
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>

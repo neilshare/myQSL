@@ -34,6 +34,11 @@ export class StationRepository {
     return row ? mapRow(row) : null;
   }
 
+  async findByCallsign(callsign: string): Promise<StationRow | null> {
+    const row = await this.db.prepare("SELECT * FROM stations WHERE callsign = ? COLLATE NOCASE LIMIT 1").bind(callsign.trim().toUpperCase()).first<Record<string, unknown>>();
+    return row ? mapRow(row) : null;
+  }
+
   async findDefault(): Promise<StationRow | null> {
     const row = await this.db.prepare("SELECT * FROM stations WHERE is_default = 1 LIMIT 1").first<Record<string, unknown>>();
     return row ? mapRow(row) : null;

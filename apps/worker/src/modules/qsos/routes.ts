@@ -23,7 +23,20 @@ const listSchema = z.object({
 
 function service(c: { env: Env }) { return new QsoService(new QsoRepository(c.env.DB), new StationRepository(c.env.DB)); }
 function etag(row: { id: number; version: number }) { return `W/"qso-${row.id}-${row.version}"`; }
-function validation(error: unknown, path: string) { return error instanceof z.ZodError ? problem(422, "https://myqsl.app/problems/validation", "Validation failed", error.message, path) : problem(500, "https://myqsl.app/problems/internal", "Internal error", "Unexpected QSO error", path); }
+function validation(error: unknown, path: string) {
+  if (error instanceof z.ZodError) {
+    return problem(422, "https://myqsl.app/problems/validation", "Validation failed", error.message, path);
+  }
+  const message = error instanceof Error ? error.message : "Unexpected QSO error";
+  const isClientError =
+    message.includes("station") ||
+    message.includes("QSO date") ||
+    message.includes("duplicate_reason");
+  const status = isClientError ? 422 : 500;
+  const type = isClientError ? "https://myqsl.app/problems/validation" : "https://myqsl.app/problems/internal";
+  const title = isClientError ? "Validation failed" : "Internal error";
+  return problem(status, type, title, message, path);
+}
 
 export function registerQsoRoutes(app: Hono<{ Bindings: Env; Variables: RequestVariables }>): void {
   app.post("/api/v1/qsos", async (c) => {
