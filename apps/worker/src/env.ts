@@ -15,5 +15,6 @@ export interface Env {
   D1_BACKUP_WORKFLOW: Workflow<BackupParams>;
   RATE_LIMIT_SALT?: string;
   TEST_AUTH_ENABLED?: string;
+  ALLOWED_ORIGINS?: string;
 }
 
