@@ -55,7 +55,13 @@ export async function renderCard(
       context.font = `${element.font_size * (width / template.base_width)}px ${element.font}`;
       context.fillStyle = element.color;
       context.textAlign = element.align;
-      context.fillText(formatQsoField(qso, element.field), x, y);
+      const text = formatQsoField(qso, element.field);
+      const maxWidth = element.max_width ? element.max_width * width : undefined;
+      if (maxWidth !== undefined) {
+        context.fillText(text, x, y, maxWidth);
+      } else {
+        context.fillText(text, x, y);
+      }
       continue;
     }
     const qrValue = element.value === "card_token" ? String(qso.public_id ?? "") : publicUrl;

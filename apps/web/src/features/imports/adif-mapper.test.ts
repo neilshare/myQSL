@@ -105,4 +105,21 @@ describe("ADIF Semantic Mapper", () => {
     expect(reconstructed.fields.FREQ).toBe("144.125");
     expect(reconstructed.fields.FREQ_HZ).toBe("144125000");
   });
+
+  it("preserves 0 numeric value for MY_POWER_W", () => {
+    const record = {
+      fields: {
+        CALL: "VR2ZZZ",
+        STATION_CALLSIGN: "BA4RC",
+        QSO_DATE: "20260905",
+        TIME_ON: "080000",
+        BAND: "2M",
+        MODE: "FM",
+        MY_POWER_W: "0"
+      },
+      types: {}
+    };
+    const qso = recordToQso(record);
+    expect(qso.my_power_w).toBe(0);
+  });
 });

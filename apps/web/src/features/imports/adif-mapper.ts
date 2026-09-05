@@ -43,8 +43,10 @@ export function recordToQso(record: AdifRecord): Record<string, unknown> {
     freqMhz = (Number(core.freq_hz) / 1_000_000).toFixed(6).replace(/\.?0+$/, "");
   }
 
+  const stationCall = core.station_callsign ?? fields.OPERATOR_CALLSIGN ?? fields.OPERATOR ?? "";
+
   return {
-    station_callsign: String(core.station_callsign ?? ""),
+    station_callsign: String(stationCall),
     call: String(core.call ?? ""),
     qso_date: String(core.qso_date ?? ""),
     time_on: String(core.time_on ?? ""),
@@ -60,7 +62,9 @@ export function recordToQso(record: AdifRecord): Record<string, unknown> {
     my_grid: core.my_grid ? String(core.my_grid) : undefined,
     my_rig: core.my_rig ? String(core.my_rig) : undefined,
     my_antenna: core.my_antenna ? String(core.my_antenna) : undefined,
-    my_power_w: core.my_power_w ? Number(core.my_power_w) : undefined,
+    my_power_w: core.my_power_w !== undefined && core.my_power_w !== null && core.my_power_w !== "" && !Number.isNaN(Number(core.my_power_w))
+      ? Number(core.my_power_w)
+      : undefined,
     freq_mhz: freqMhz,
     adif_extra: extra
   };

@@ -48,7 +48,11 @@ export class QsoService {
     }
     const station = qso.station_id ? await this.stations.findById(qso.station_id) : await this.stations.findDefault();
     if (!station) throw new Error("A station is required before creating a QSO");
-    const dedupeKey = await makeDedupeKey(qso);
+    if (qso.station_callsign && qso.station_callsign.toUpperCase() !== station.callsign.toUpperCase()) {
+      throw new Error(`station_callsign (${qso.station_callsign}) does not match station (${station.callsign})`);
+    }
+    const stationCallsign = station.callsign.toUpperCase();
+    const dedupeKey = await makeDedupeKey({ ...qso, station_callsign: stationCallsign });
     const duplicate = await this.repository.findDuplicate(dedupeKey);
     if (duplicate && !options.preserve_duplicate) throw new DuplicateQsoError(duplicate.id);
     const timestamp = this.now();
@@ -59,7 +63,7 @@ export class QsoService {
 
     const insert: QsoInsert = {
       station_id: station.id,
-      station_callsign: qso.station_callsign,
+      station_callsign: stationCallsign,
       call: qso.call,
       qso_date: qso.qso_date,
       time_on: qso.time_on,

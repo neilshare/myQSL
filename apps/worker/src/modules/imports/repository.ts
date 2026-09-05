@@ -165,7 +165,9 @@ export class ImportRepository {
       .prepare(
         `SELECT id, call, station_callsign, band, mode, qso_date, time_on, qso_at, dedupe_key
          FROM qsos
-         WHERE UPPER(call) IN (${placeholders}) AND deleted_at IS NULL`
+         WHERE UPPER(call) IN (${placeholders}) AND deleted_at IS NULL
+         ORDER BY qso_at DESC
+         LIMIT 1000`
       )
       .bind(...cleanCalls)
       .all<{
@@ -184,6 +186,14 @@ export class ImportRepository {
 
   async executeChunkBatch(input: ExecuteChunkBatchInput): Promise<{ result_json: string }> {
     const statements: D1PreparedStatement[] = [];
+
+    // 0. Pre-condition guard: Abort transaction immediately if job is not in created/running status
+    const statusGuardSql = `SELECT CASE
+      WHEN (SELECT status FROM import_jobs WHERE id = ? AND status IN ('created', 'running')) IS NOT NULL
+      THEN json('{}')
+      ELSE json('ERROR_IMPORT_JOB_NOT_WRITABLE')
+    END`;
+    statements.push(this.db.prepare(statusGuardSql).bind(input.jobId));
 
     // 1. Group QSO inserts (at most 4 rows per INSERT statement to keep parameters <= 88 <= 100)
     const ROWS_PER_STMT = 4;

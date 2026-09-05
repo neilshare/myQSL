@@ -2,10 +2,15 @@ export interface BackupRunRow { id: string; workflow_instance_id: string; export
 export class BackupRepository {
   constructor(private readonly db: D1Database) {}
   async create(input: { id: string; instanceId: string; startedAt: number }): Promise<BackupRunRow> {
-    await this.db
-      .prepare("INSERT INTO backup_runs (id, workflow_instance_id, status, started_at) VALUES (?, ?, 'running', ?)")
+    const res = await this.db
+      .prepare(
+        "INSERT INTO backup_runs (id, workflow_instance_id, status, started_at) SELECT ?, ?, 'running', ? WHERE NOT EXISTS (SELECT 1 FROM backup_runs WHERE status = 'running')"
+      )
       .bind(input.id, input.instanceId, input.startedAt)
       .run();
+    if (res.meta.changes === 0) {
+      throw new Error("CONCURRENT_BACKUP_RUNNING");
+    }
     return this.get(input.id) as Promise<BackupRunRow>;
   }
   get(id: string): Promise<BackupRunRow | null> {
@@ -22,13 +27,13 @@ export class BackupRepository {
   }
   async complete(id: string, input: { bookmark: string; key: string; etag: string; sha256?: string | null; size: number; finishedAt: number }): Promise<BackupRunRow> {
     await this.db
-      .prepare("UPDATE backup_runs SET status = 'completed', export_bookmark = ?, object_key = ?, r2_etag = ?, content_sha256 = ?, size_bytes = ?, finished_at = ? WHERE id = ?")
+      .prepare("UPDATE backup_runs SET status = 'completed', export_bookmark = ?, object_key = ?, r2_etag = ?, content_sha256 = ?, size_bytes = ?, finished_at = ? WHERE id = ? AND status = 'running'")
       .bind(input.bookmark, input.key, input.etag, input.sha256 ?? null, input.size, input.finishedAt, id)
       .run();
     return this.get(id) as Promise<BackupRunRow>;
   }
   async fail(id: string, code: string, finishedAt: number): Promise<BackupRunRow> {
-    await this.db.prepare("UPDATE backup_runs SET status = 'failed', error_code = ?, finished_at = ? WHERE id = ?").bind(code.slice(0, 80), finishedAt, id).run();
+    await this.db.prepare("UPDATE backup_runs SET status = 'failed', error_code = ?, finished_at = ? WHERE id = ? AND status = 'running'").bind(code.slice(0, 80), finishedAt, id).run();
     return this.get(id) as Promise<BackupRunRow>;
   }
   async markVerified(id: string, verifiedAt: number): Promise<BackupRunRow> {

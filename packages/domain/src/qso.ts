@@ -7,6 +7,23 @@ const Call = z
   .max(16)
   .regex(/^[A-Z0-9]+(?:\/[A-Z0-9]+)*$/i);
 
+export function isValidQsoDateTime(qso_date: string, time_on: string): boolean {
+  if (!/^\d{8}$/.test(qso_date) || !/^\d{4}(?:\d{2})?$/.test(time_on)) {
+    return false;
+  }
+  const year = parseInt(qso_date.slice(0, 4), 10);
+  const month = parseInt(qso_date.slice(4, 6), 10);
+  const day = parseInt(qso_date.slice(6, 8), 10);
+  const hours = parseInt(time_on.slice(0, 2), 10);
+  const minutes = parseInt(time_on.slice(2, 4), 10);
+  const seconds = time_on.length >= 6 ? parseInt(time_on.slice(4, 6), 10) : 0;
+  if (month < 1 || month > 12 || day < 1 || day > 31 || hours > 23 || minutes > 59 || seconds > 59) {
+    return false;
+  }
+  const date = new Date(Date.UTC(year, month - 1, day, hours, minutes, seconds));
+  return date.getUTCFullYear() === year && (date.getUTCMonth() + 1) === month && date.getUTCDate() === day;
+}
+
 export const QsoInputSchema = z.object({
   station_id: z.number().int().positive().optional(),
   station_callsign: Call,
@@ -24,6 +41,9 @@ export const QsoInputSchema = z.object({
   qth: z.string().trim().max(160).nullable().default(null),
   comment: z.string().max(2000).nullable().default(null),
   adif_extra: z.record(z.string(), z.string()).default({})
+}).refine((val) => isValidQsoDateTime(val.qso_date, val.time_on), {
+  message: "Invalid calendar date or time",
+  path: ["qso_date"]
 });
 
 export type QsoInput = z.input<typeof QsoInputSchema>;

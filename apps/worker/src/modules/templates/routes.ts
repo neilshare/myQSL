@@ -10,11 +10,42 @@ import { TemplateRepository } from "./repository";
 import { TemplateService } from "./service";
 
 const idSchema = z.coerce.number().int().positive();
+const createTemplateSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  layout: z.unknown().optional(),
+  schema_version: z.number().int().positive().optional(),
+  base_width: z.number().int().positive().optional(),
+  base_height: z.number().int().positive().optional(),
+  elements: z.array(z.unknown()).optional()
+});
+
 export function registerTemplateRoutes(app: Hono<{ Bindings: Env; Variables: RequestVariables }>): void {
   app.get("/api/v1/card-templates", async (c) => { const service = new TemplateService(new TemplateRepository(c.env.DB), new MediaStore(c.env.MEDIA)); return c.json({ data: await service.list() }); });
   app.post("/api/v1/card-templates", async (c) => {
-    try { const body = await c.req.json() as { name: string; layout: unknown } & Record<string, unknown>; const layout = body.layout ?? { schema_version: body.schema_version, base_width: body.base_width, base_height: body.base_height, elements: body.elements }; const service = new TemplateService(new TemplateRepository(c.env.DB), new MediaStore(c.env.MEDIA)); return c.json({ data: await service.create({ name: body.name, layout }) }, 201); }
-    catch (error) { return problem(422, "https://myqsl.app/problems/validation", "Validation failed", error instanceof Error ? error.message : "Invalid template", c.req.path); }
+    try {
+      const parsed = createTemplateSchema.parse(await c.req.json());
+      const layout = parsed.layout ?? {
+        schema_version: parsed.schema_version,
+        base_width: parsed.base_width,
+        base_height: parsed.base_height,
+        elements: parsed.elements
+      };
+      const service = new TemplateService(new TemplateRepository(c.env.DB), new MediaStore(c.env.MEDIA));
+      const created = await service.create({ name: parsed.name, layout });
+      const audit = new AuditWriter(c.env.DB);
+      await audit.append({
+        actor: c.get("actor") ?? "unknown",
+        action: "create_template",
+        entity: "card_template",
+        entityId: String(created.id),
+        requestId: c.get("requestId") ?? "unknown",
+        detail: { name: created.name },
+        createdAt: Date.now()
+      });
+      return c.json({ data: created }, 201);
+    } catch (error) {
+      return problem(422, "https://myqsl.app/problems/validation", "Validation failed", error instanceof Error ? error.message : "Invalid template", c.req.path);
+    }
   });
   app.get("/api/v1/card-templates/:id", async (c) => {
     const id = idSchema.safeParse(c.req.param("id"));
@@ -54,10 +85,12 @@ export function registerTemplateRoutes(app: Hono<{ Bindings: Env; Variables: Req
     let version: number | undefined;
     const ifMatch = c.req.header("If-Match");
     if (ifMatch) {
-      const parsed = parseInt(ifMatch.replace(/"/g, "").trim(), 10);
-      if (!Number.isNaN(parsed)) version = parsed;
+      const match = ifMatch.trim().match(/^"?(\d+)"?$/);
+      if (match) {
+        version = parseInt(match[1], 10);
+      }
     }
-    if (version === undefined && typeof body.version === "number") {
+    if (version === undefined && typeof body.version === "number" && Number.isInteger(body.version)) {
       version = body.version;
     }
 

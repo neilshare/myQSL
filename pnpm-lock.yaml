@@ -66,8 +66,8 @@ importers:
         specifier: 19.1.1
         version: 19.1.1(react@19.1.1)
       react-router:
-        specifier: 7.8.2
-        version: 7.8.2(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+        specifier: 7.18.3
+        version: 7.18.3(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
     devDependencies:
       '@tailwindcss/vite':
         specifier: 4.1.12
@@ -103,17 +103,17 @@ importers:
         specifier: workspace:*
         version: link:../../packages/domain
       drizzle-orm:
-        specifier: 0.44.5
-        version: 0.44.5(@cloudflare/workers-types@5.20260903.1)
+        specifier: 0.45.2
+        version: 0.45.2(@cloudflare/workers-types@5.20260903.1)
       hono:
-        specifier: 4.9.6
-        version: 4.9.6
+        specifier: 4.13.7
+        version: 4.13.7
       jose:
         specifier: 6.1.0
         version: 6.1.0
       nanoid:
-        specifier: 5.1.5
-        version: 5.1.5
+        specifier: 5.1.16
+        version: 5.1.16
       zod:
         specifier: 4.1.5
         version: 4.1.5
@@ -1460,8 +1460,8 @@ packages:
   dom-accessibility-api@0.5.16:
     resolution: {integrity: sha512-X7BJ2yElsnOJ30pZF4uIIDfBEVgF4XEBxL9Bxhy6dnrm5hkzqmsWHGTiHqRiITNhMyFLyAiWndIJP7Z1NTteDg==}
 
-  drizzle-orm@0.44.5:
-    resolution: {integrity: sha512-jBe37K7d8ZSKptdKfakQFdeljtu3P2Cbo7tJoJSVZADzIKOBo9IAJPOmMsH2bZl90bZgh8FQlD8BjxXA/zuBkQ==}
+  drizzle-orm@0.45.2:
+    resolution: {integrity: sha512-kY0BSaTNYWnoDMVoyY8uxmyHjpJW1geOmBMdSSicKo9CIIWkSxMIj2rkeSR51b8KAPB7m+qysjuHme5nKP+E5Q==}
     peerDependencies:
       '@aws-sdk/client-rds-data': '>=3'
       '@cloudflare/workers-types': '>=4'
@@ -1753,8 +1753,8 @@ packages:
     resolution: {integrity: sha512-T2UbfbBEF32wiepXIsMlTW9+dDYC6wMh/t/vYA4tuOMKqWz/n3vr1NFSxQiyP+zk2mXsoMA/i/7qV6LKut1t1A==}
     engines: {node: '>= 0.4'}
 
-  hono@4.9.6:
-    resolution: {integrity: sha512-doVjXhSFvYZ7y0dNokjwwSahcrAfdz+/BCLvAMa/vHLzjj8+CFyV5xteThGUsKdkaasgN+gF2mUxao+SGLpUeA==}
+  hono@4.13.7:
+    resolution: {integrity: sha512-c8/gF9ac8Y78/agExVocyLevgR+JlpNB444Py0FSX8pJoPdYUfUzRcXtYEYGwt6l19qIlVZPN5Mfsw9jFShmQQ==}
     engines: {node: '>=16.9.0'}
 
   html-encoding-sniffer@4.0.0:
@@ -2025,8 +2025,8 @@ packages:
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
-  nanoid@5.1.5:
-    resolution: {integrity: sha512-Ir/+ZpE9fDsNH0hQ3C68uyThDXzYcim2EqcZ8zn8Chtt1iylPT9xXJB0kPCnqzgcEGikO9RxSrh63MsmVCU7Fw==}
+  nanoid@5.1.16:
+    resolution: {integrity: sha512-kVrnsrJqMR8+oLJnGEmSWw9BivK5mt7H3FZatVRjrc5wGqFYuBxX1yG7+A7Gi5AefkX6t/oCkizcQgpu0cY1dQ==}
     engines: {node: ^18 || >=20}
     hasBin: true
 
@@ -2157,8 +2157,8 @@ packages:
     resolution: {integrity: sha512-z6F7K9bV85EfseRCp2bzrpyQ0Gkw1uLoCel9XBVWPg/TjRj94SkJzUTGfOa4bs7iJvBWtQG0Wq7wnI0syw3EBQ==}
     engines: {node: '>=0.10.0'}
 
-  react-router@7.8.2:
-    resolution: {integrity: sha512-7M2fR1JbIZ/jFWqelpvSZx+7vd7UlBTfdZqf6OSdF9g6+sfdqJDAWcak6ervbHph200ePlu+7G8LdoiC3ReyAQ==}
+  react-router@7.18.3:
+    resolution: {integrity: sha512-gyXgtdr5uACJ5b1Q4udzjVV+tb/rlHIMJKuJ0e89R4Kzgz47z/rgP0dIKxktqIEUhDHluGTPJJH/wRha7CyqsA==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
       react: '>=18'
@@ -3728,7 +3728,7 @@ snapshots:
 
   dom-accessibility-api@0.5.16: {}
 
-  drizzle-orm@0.44.5(@cloudflare/workers-types@5.20260903.1):
+  drizzle-orm@0.45.2(@cloudflare/workers-types@5.20260903.1):
     optionalDependencies:
       '@cloudflare/workers-types': 5.20260903.1
 
@@ -3977,7 +3977,7 @@ snapshots:
     dependencies:
       function-bind: 1.1.2
 
-  hono@4.9.6: {}
+  hono@4.13.7: {}
 
   html-encoding-sniffer@4.0.0:
     dependencies:
@@ -4215,7 +4215,7 @@ snapshots:
 
   nanoid@3.3.18: {}
 
-  nanoid@5.1.5: {}
+  nanoid@5.1.16: {}
 
   natural-compare@1.4.0: {}
 
@@ -4324,7 +4324,7 @@ snapshots:
 
   react-refresh@0.17.0: {}
 
-  react-router@7.8.2(react-dom@19.1.1(react@19.1.1))(react@19.1.1):
+  react-router@7.18.3(react-dom@19.1.1(react@19.1.1))(react@19.1.1):
     dependencies:
       cookie: 1.1.1
       react: 19.1.1

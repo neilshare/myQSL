@@ -90,11 +90,26 @@ export function TemplateEditorPage() {
       });
   }, []);
 
+  const backgroundUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (backgroundUrlRef.current && backgroundUrlRef.current.startsWith("blob:")) {
+        URL.revokeObjectURL(backgroundUrlRef.current);
+      }
+    };
+  }, []);
+
   const handleBackgroundChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (backgroundUrlRef.current && backgroundUrlRef.current.startsWith("blob:")) {
+        URL.revokeObjectURL(backgroundUrlRef.current);
+      }
+      const newUrl = URL.createObjectURL(file);
+      backgroundUrlRef.current = newUrl;
       setBackgroundFile(file);
-      setBackgroundUrl(URL.createObjectURL(file));
+      setBackgroundUrl(newUrl);
     }
   };
 

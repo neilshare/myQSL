@@ -31,8 +31,10 @@ export interface SoftDuplicateFields {
   mode: string;
 }
 
+import { isValidQsoDateTime } from "./qso";
+
 export function parseQsoTimestamp(qso_date: string, time_on: string): number {
-  if (!/^\d{8}$/.test(qso_date) || !/^\d{4,6}$/.test(time_on)) {
+  if (!isValidQsoDateTime(qso_date, time_on)) {
     return NaN;
   }
   const year = parseInt(qso_date.slice(0, 4), 10);

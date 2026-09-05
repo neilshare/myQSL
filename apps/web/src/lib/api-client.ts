@@ -38,7 +38,7 @@ export const api = {
     restore: (id: number) => apiFetch<QsoRecord>(`/api/v1/qsos/${id}/restore`, { method: "POST" })
   },
   stations: {
-    list: () => apiFetch<{ data: StationRecord[] }>("/api/v1/stations"),
+    list: () => apiFetch<StationRecord[]>("/api/v1/stations"),
     create: (input: StationInput | Record<string, unknown>) => apiFetch<StationRecord>("/api/v1/stations", { method: "POST", body: JSON.stringify(input) }),
     patch: (id: number, patch: Partial<StationInput> | Record<string, unknown>, etag: string) => apiFetch<StationRecord>(`/api/v1/stations/${id}`, { method: "PATCH", headers: { "If-Match": etag }, body: JSON.stringify(patch) })
   },
@@ -87,6 +87,7 @@ export const api = {
   },
   imports: {
     createJob: (input: Record<string, unknown>) => apiFetch<{ id: string }>("/api/v1/imports", { method: "POST", body: JSON.stringify(input) }).then((result) => ((result.data as any)?.data ?? result.data)),
+    getJob: (id: string) => apiFetch<any>(`/api/v1/imports/${id}`).then((result) => ((result.data as any)?.data ?? result.data)),
     uploadChunk: (id: string, input: Record<string, unknown>) => apiFetch(`/api/v1/imports/${id}/chunks`, { method: "POST", body: JSON.stringify(input) }).then((result) => ((result.data as any)?.data ?? result.data)),
     completeJob: (id: string) => apiFetch<{ id: string; status: string }>(`/api/v1/imports/${id}/complete`, { method: "POST" }).then((result) => ((result.data as any)?.data ?? result.data))
   }

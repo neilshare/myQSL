@@ -98,4 +98,28 @@ describe("QSO patch normalization", () => {
     const badComment = "A".repeat(2001);
     expect(() => normalizeQsoPatch({ comment: badComment })).toThrow();
   });
+
+  it("rejects invalid calendar dates such as Feb 31 or invalid time like hour 25", () => {
+    expect(() =>
+      normalizeQso({
+        station_callsign: "BA4RC",
+        call: "BG4YYY",
+        qso_date: "20260231", // Feb 31 does not exist
+        time_on: "1200",
+        band: "40m",
+        mode: "SSB"
+      })
+    ).toThrow(/Invalid calendar date/);
+
+    expect(() =>
+      normalizeQso({
+        station_callsign: "BA4RC",
+        call: "BG4YYY",
+        qso_date: "20260101",
+        time_on: "250000", // Hour 25 invalid
+        band: "40m",
+        mode: "SSB"
+      })
+    ).toThrow(/Invalid calendar date/);
+  });
 });

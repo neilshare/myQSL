@@ -12,7 +12,24 @@ export class CardService {
     const qso = await this.qsos.findById(qsoId); const template = await this.templates.get(templateId);
     if (!qso || !template) throw new Error("QSO or template not found");
     const layout = CardTemplateSchema.parse(JSON.parse(template.layout_json));
-    const qsoSnapshot = { call: qso.call, station_callsign: qso.station_callsign, qso_date: qso.qso_date, time_on: qso.time_on, band: qso.band, freq_hz: qso.freq_hz, mode: qso.mode, rst_sent: qso.rst_sent, rst_rcvd: qso.rst_rcvd, my_grid: qso.my_grid };
+    const qsoSnapshot = {
+      call: qso.call,
+      station_callsign: qso.station_callsign,
+      qso_date: qso.qso_date,
+      time_on: qso.time_on,
+      band: qso.band,
+      freq_hz: qso.freq_hz,
+      freq_mhz: qso.freq_hz ? (qso.freq_hz / 1_000_000).toFixed(3) : null,
+      mode: qso.mode,
+      submode: qso.submode,
+      rst_sent: qso.rst_sent,
+      rst_rcvd: qso.rst_rcvd,
+      gridsquare: qso.gridsquare,
+      name: qso.name,
+      qth: qso.qth,
+      comment: qso.comment,
+      my_grid: qso.my_grid
+    };
     const templateSnapshot = { schema_version: 1, version: template.version, base_width: template.base_width, base_height: template.base_height, layout, background_r2_key: template.background_r2_key, background_sha256: template.background_sha256 };
     const row = await this.repository.create({
       id: nanoid(16),
@@ -26,6 +43,9 @@ export class CardService {
       now: this.now()
     });
     return { ...row, public_url: publicCardPath(row.public_id) };
+  }
+  async get(id: string): Promise<CardRow | null> {
+    return this.repository.get(id);
   }
   async attachImage(cardId: string, bytes: ArrayBuffer, expectedHash?: string): Promise<CardRow> {
     const digest = await crypto.subtle.digest("SHA-256", bytes); const hash = [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");

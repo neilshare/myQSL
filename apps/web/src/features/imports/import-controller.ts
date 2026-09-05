@@ -102,8 +102,14 @@ export async function parseAdifAsync(file: File, signal?: AbortSignal): Promise<
 }
 
 export async function runImport(file: File, api: ImportApi, options: ImportOptions = {}) {
-  const chunkSize = options.chunkSize ?? IMPORT_CHUNK_SIZE;
-  const concurrency = options.concurrency ?? 1;
+  const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50MB limit
+  if (file.size > MAX_FILE_SIZE_BYTES) {
+    throw new Error("File exceeds maximum allowed size of 50MB");
+  }
+
+  // The server import protocol enforces sequential chunk verification (chunk N requires chunk N-1).
+  // Therefore, chunk uploads are executed strictly in sequential order (concurrency = 1).
+  const chunkSize = IMPORT_CHUNK_SIZE;
   const signal = options.signal;
 
   if (signal?.aborted) {
@@ -173,48 +179,44 @@ export async function runImport(file: File, api: ImportApi, options: ImportOptio
 
   const uploadedIndices: number[] = Array.from(confirmedChunks);
 
-  for (let start = 0; start < payloads.length; start += concurrency) {
+  for (const { index, chunk, checksum } of payloads) {
     if (signal?.aborted) {
       throw new Error("Import aborted by user");
     }
-    const batch = payloads.slice(start, start + concurrency);
-    await Promise.all(
-      batch.map(async ({ index, chunk, checksum }) => {
-        if (confirmedChunks.has(index)) {
-          return;
-        }
-        const res = await api.uploadChunk(jobId!, {
-          chunk_index: index,
-          checksum,
-          idempotency_key: `${jobId}-${index}`,
-          records: chunk
-        });
+    if (confirmedChunks.has(index)) {
+      continue;
+    }
+    const res = await api.uploadChunk(jobId!, {
+      chunk_index: index,
+      checksum,
+      idempotency_key: `${jobId}-${index}`,
+      records: chunk
+    });
 
-        // Accumulate classifications if returned
-        if (res && typeof res === "object" && "classifications" in res && Array.isArray((res as any).classifications)) {
-          for (const item of (res as any).classifications) {
-            if (item.bucket === "ready") counts.ready++;
-            else if (item.bucket === "warning") counts.warning++;
-            else if (item.bucket === "duplicate") counts.duplicate++;
-            else if (item.bucket === "rejected") counts.rejected++;
-          }
-        } else {
-          // Fallback increment: all ready
-          counts.ready += chunk.length;
-        }
+    // Accumulate classifications if returned by server (do not fail-open)
+    if (res && typeof res === "object" && "classifications" in res && Array.isArray((res as any).classifications)) {
+      for (const item of (res as any).classifications) {
+        if (item.bucket === "ready") counts.ready++;
+        else if (item.bucket === "warning") counts.warning++;
+        else if (item.bucket === "duplicate") counts.duplicate++;
+        else if (item.bucket === "rejected") counts.rejected++;
+      }
+    }
 
-        confirmedChunks.add(index);
-        uploadedIndices.push(index);
+    if (signal?.aborted) {
+      throw new Error("Import aborted by user");
+    }
 
-        options.onProgress?.({
-          currentChunk: confirmedChunks.size,
-          totalChunks,
-          processedRecords: Math.min(confirmedChunks.size * chunkSize, records.length),
-          totalRecords: records.length,
-          counts: { ...counts }
-        });
-      })
-    );
+    confirmedChunks.add(index);
+    uploadedIndices.push(index);
+
+    options.onProgress?.({
+      currentChunk: confirmedChunks.size,
+      totalChunks,
+      processedRecords: Math.min(confirmedChunks.size * chunkSize, records.length),
+      totalRecords: records.length,
+      counts: { ...counts }
+    });
   }
 
   if (signal?.aborted) {

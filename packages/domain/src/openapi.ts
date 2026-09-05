@@ -454,6 +454,32 @@ export const myqslOpenApiSpec = {
         }
       }
     },
+    "/api/v1/cards/{id}": {
+      get: {
+        summary: "Get Card",
+        operationId: "getCard",
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "string" } }
+        ],
+        responses: {
+          "200": {
+            description: "Card details",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    data: { $ref: "#/components/schemas/CardRow" }
+                  },
+                  required: ["data"]
+                }
+              }
+            }
+          },
+          "404": { $ref: "#/components/responses/NotFoundError" }
+        }
+      }
+    },
     "/api/v1/cards/{id}/image": {
       put: {
         summary: "Attach Rendered Card Image",
@@ -576,6 +602,202 @@ export const myqslOpenApiSpec = {
             }
           },
           "429": { description: "Rate limit exceeded" }
+        }
+      }
+    },
+    "/api/v1/public/cards/{publicId}": {
+      get: {
+        summary: "Get Public Card View",
+        operationId: "getPublicCard",
+        parameters: [
+          { name: "publicId", in: "path", required: true, schema: { type: "string" } }
+        ],
+        responses: {
+          "200": {
+            description: "Public card metadata and view",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/PublicCardView" }
+              }
+            }
+          },
+          "404": { $ref: "#/components/responses/NotFoundError" },
+          "410": { description: "Card voided" },
+          "429": { description: "Rate limit exceeded" }
+        }
+      }
+    },
+    "/api/v1/public/cards/{publicId}/image": {
+      get: {
+        summary: "Get Public Card Image",
+        operationId: "getPublicCardImage",
+        parameters: [
+          { name: "publicId", in: "path", required: true, schema: { type: "string" } },
+          { name: "If-None-Match", in: "header", required: false, schema: { type: "string" } }
+        ],
+        responses: {
+          "200": {
+            description: "Card PNG image",
+            content: { "image/png": { schema: { type: "string", format: "binary" } } }
+          },
+          "304": { description: "Not modified" },
+          "404": { $ref: "#/components/responses/NotFoundError" },
+          "410": { description: "Card voided" },
+          "429": { description: "Rate limit exceeded" }
+        }
+      }
+    },
+    [API_PATHS.imports]: {
+      post: {
+        summary: "Create Import Job",
+        operationId: "createImportJob",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  file_name: { type: "string" },
+                  file_sha256: { type: "string" },
+                  total_records: { type: "integer" }
+                },
+                required: ["file_name", "file_sha256", "total_records"]
+              }
+            }
+          }
+        },
+        responses: {
+          "201": {
+            description: "Import job created",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    data: {
+                      type: "object",
+                      properties: { id: { type: "string" } },
+                      required: ["id"]
+                    }
+                  },
+                  required: ["data"]
+                }
+              }
+            }
+          },
+          "422": { $ref: "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/api/v1/imports/{id}": {
+      get: {
+        summary: "Get Import Job Status",
+        operationId: "getImportJob",
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "string" } }
+        ],
+        responses: {
+          "200": {
+            description: "Import job summary",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    data: { $ref: "#/components/schemas/ImportJobSummary" }
+                  },
+                  required: ["data"]
+                }
+              }
+            }
+          },
+          "404": { $ref: "#/components/responses/NotFoundError" }
+        }
+      }
+    },
+    "/api/v1/imports/{id}/chunks": {
+      post: {
+        summary: "Upload Import Chunk",
+        operationId: "uploadImportChunk",
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "string" } }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  chunk_index: { type: "integer" },
+                  checksum: { type: "string" },
+                  idempotency_key: { type: "string" },
+                  records: { type: "array", items: { type: "object" } }
+                },
+                required: ["chunk_index", "checksum", "idempotency_key", "records"]
+              }
+            }
+          }
+        },
+        responses: {
+          "200": {
+            description: "Chunk accepted",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    data: {
+                      type: "object",
+                      properties: {
+                        classifications: {
+                          type: "array",
+                          items: { type: "object" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": { $ref: "#/components/responses/ConflictError" },
+          "422": { $ref: "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/api/v1/imports/{id}/complete": {
+      post: {
+        summary: "Complete Import Job",
+        operationId: "completeImportJob",
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "string" } }
+        ],
+        responses: {
+          "200": {
+            description: "Import job completed",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    data: {
+                      type: "object",
+                      properties: {
+                        id: { type: "string" },
+                        status: { type: "string" }
+                      },
+                      required: ["id", "status"]
+                    }
+                  },
+                  required: ["data"]
+                }
+              }
+            }
+          },
+          "409": { $ref: "#/components/responses/ConflictError" },
+          "422": { $ref: "#/components/responses/ValidationError" }
         }
       }
     },
@@ -836,6 +1058,80 @@ export const myqslOpenApiSpec = {
         },
         required: ["public_id", "call", "qso_date", "created_at"]
       },
+      PublicCardView: {
+        type: "object",
+        properties: {
+          public_id: { type: "string" },
+          status: { type: "string", enum: ["published"] },
+          image_url: { type: "string", nullable: true },
+          qso: {
+            type: "object",
+            properties: {
+              call: { type: "string" },
+              station_callsign: { type: "string" },
+              qso_date: { type: "string" },
+              time_on: { type: "string" },
+              band: { type: "string" },
+              mode: { type: "string" },
+              rst_sent: { type: "string", nullable: true },
+              rst_rcvd: { type: "string", nullable: true }
+            },
+            required: ["call", "station_callsign", "qso_date", "time_on", "band", "mode"]
+          }
+        },
+        required: ["public_id", "status", "qso"]
+      },
+      ImportJobSummary: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          file_name: { type: "string" },
+          file_sha256: { type: "string" },
+          total_records: { type: "integer" },
+          chunk_size: { type: "integer" },
+          protocol_version: { type: "integer" },
+          status: { type: "string", enum: ["created", "running", "completed", "failed"] },
+          counts: {
+            type: "object",
+            properties: {
+              accepted: { type: "integer" },
+              warning: { type: "integer" },
+              duplicate: { type: "integer" },
+              rejected: { type: "integer" },
+              processed: { type: "integer" }
+            },
+            required: ["accepted", "warning", "duplicate", "rejected", "processed"]
+          },
+          confirmed_chunks: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                chunk_index: { type: "integer" },
+                checksum: { type: "string" },
+                records_count: { type: "integer" }
+              },
+              required: ["chunk_index", "checksum", "records_count"]
+            }
+          },
+          created_at: { type: "integer" },
+          updated_at: { type: "integer" },
+          completed_at: { type: "integer", nullable: true }
+        },
+        required: [
+          "id",
+          "file_name",
+          "file_sha256",
+          "total_records",
+          "chunk_size",
+          "protocol_version",
+          "status",
+          "counts",
+          "confirmed_chunks",
+          "created_at",
+          "updated_at"
+        ]
+      },
       ProblemDetails: {
         type: "object",
         properties: {
@@ -851,6 +1147,14 @@ export const myqslOpenApiSpec = {
     responses: {
       ValidationError: {
         description: "Validation error",
+        content: {
+          "application/problem+json": {
+            schema: { $ref: "#/components/schemas/ProblemDetails" }
+          }
+        }
+      },
+      NotFoundError: {
+        description: "Resource not found",
         content: {
           "application/problem+json": {
             schema: { $ref: "#/components/schemas/ProblemDetails" }
