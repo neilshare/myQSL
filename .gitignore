@@ -24,3 +24,10 @@ test-results/
 *.tmp
 tmp/
 qsl_design_samples/
+
+# Local drafts and solutions
+eQSR_Solution.md
+eQSL_Solution.md
+eQSL_Solution1.md
+eqsr_review_report.md
+
