@@ -12,11 +12,22 @@ const lookupSchema = z.object({
   qso_date: z.string().regex(/^\d{8}$/)
 });
 
+function getEffectivePublicOrigin(c: { req: { url: string }; env: Env }): string {
+  if (c.env.PUBLIC_ORIGIN && c.env.PUBLIC_ORIGIN !== "https://myqsl.app") {
+    return c.env.PUBLIC_ORIGIN.replace(/\/$/u, "");
+  }
+  try {
+    return new URL(c.req.url).origin;
+  } catch {
+    return c.env.PUBLIC_ORIGIN || "";
+  }
+}
+
 export function registerPublicRoutes(app: Hono<{ Bindings: Env; Variables: RequestVariables }>): void {
   app.use("/api/v1/public/*", enforcePublicLimit);
 
   app.get("/api/v1/public/cards/:publicId", async (c) => {
-    const service = new PublicCardService(new CardRepository(c.env.DB), c.env.PUBLIC_ORIGIN);
+    const service = new PublicCardService(new CardRepository(c.env.DB), getEffectivePublicOrigin(c));
     const raw = await service.getRaw(c.req.param("publicId"));
     if (!raw || raw.status === "draft" || raw.status === "ready") {
       return problem(404, "https://myqsl.app/problems/not-found", "Not found", "Published card not found", c.req.path);
@@ -34,7 +45,7 @@ export function registerPublicRoutes(app: Hono<{ Bindings: Env; Variables: Reque
   });
 
   app.get("/api/v1/public/cards/:publicId/image", async (c) => {
-    const row = await new PublicCardService(new CardRepository(c.env.DB), c.env.PUBLIC_ORIGIN).getRaw(c.req.param("publicId"));
+    const row = await new PublicCardService(new CardRepository(c.env.DB), getEffectivePublicOrigin(c)).getRaw(c.req.param("publicId"));
     if (!row || row.status === "draft" || row.status === "ready") {
       return problem(404, "https://myqsl.app/problems/not-found", "Not found", "Card image not found", c.req.path);
     }
@@ -89,7 +100,7 @@ export function registerPublicRoutes(app: Hono<{ Bindings: Env; Variables: Reque
     }
     const rateLimitRes = await enforceLookupLimit(c, parsed.data.call);
     if (rateLimitRes) return rateLimitRes;
-    const result = await new PublicCardService(new CardRepository(c.env.DB), c.env.PUBLIC_ORIGIN).lookup(parsed.data.call.toUpperCase(), parsed.data.qso_date);
+    const result = await new PublicCardService(new CardRepository(c.env.DB), getEffectivePublicOrigin(c)).lookup(parsed.data.call.toUpperCase(), parsed.data.qso_date);
     const elapsed = Date.now() - startTime;
     if (elapsed < 150) {
       await new Promise((resolve) => setTimeout(resolve, 150 - elapsed));

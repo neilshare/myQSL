@@ -16,5 +16,6 @@ export interface Env {
   RATE_LIMIT_SALT?: string;
   TEST_AUTH_ENABLED?: string;
   ALLOWED_ORIGINS?: string;
+  AUTH_DISABLED?: string;
 }
 
