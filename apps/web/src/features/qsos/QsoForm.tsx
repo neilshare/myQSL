@@ -146,9 +146,35 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
   return (
     <form onSubmit={submit} aria-label={locale === "zh" ? "QSO 表单" : "QSO Form"}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.75rem" }}>
-        <label>
-          {callLabel}
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
+            <label htmlFor="qso-call-input" style={{ margin: 0, fontWeight: 500 }}>
+              {callLabel}
+            </label>
+            <div style={{ display: "flex", gap: "0.35rem", fontSize: "0.75rem" }}>
+              <a
+                href={value.call.trim() ? `https://www.qrz.com/db/${encodeURIComponent(value.call.trim().toUpperCase())}` : "https://www.qrz.com"}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "var(--accent-primary)", textDecoration: "none" }}
+                title={value.call.trim() ? `在 QRZ.com 查询 ${value.call.trim().toUpperCase()}` : "QRZ.com"}
+              >
+                QRZ ↗
+              </a>
+              <span style={{ color: "var(--border-subtle)" }}>·</span>
+              <a
+                href={value.call.trim() ? `https://www.eqsl.cc/qslcard/MemberProfile.cfm?Callsign=${encodeURIComponent(value.call.trim().toUpperCase())}` : "https://www.eqsl.cc"}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "var(--accent-primary)", textDecoration: "none" }}
+                title={value.call.trim() ? `在 eQSL.cc 查询 ${value.call.trim().toUpperCase()}` : "eQSL.cc"}
+              >
+                eQSL ↗
+              </a>
+            </div>
+          </div>
           <input
+            id="qso-call-input"
             aria-label={callLabel}
             value={value.call}
             disabled={isEditing}
@@ -156,7 +182,7 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
             required
             placeholder={locale === "zh" ? "例如 BG4YYY" : "e.g. BG4YYY"}
           />
-        </label>
+        </div>
         <label>
           {stationLabel}
           <input

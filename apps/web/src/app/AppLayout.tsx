@@ -145,6 +145,29 @@ export function AppLayout() {
                 <span className="nav-label">{t(item.key)}</span>
               </NavLink>
             ))}
+
+            <div style={{ borderTop: "1px solid var(--border-subtle)", marginTop: "0.5rem", paddingTop: "0.5rem" }}>
+              <a
+                href="https://www.qrz.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mobile-nav-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <span className="nav-icon">🌐</span>
+                <span className="nav-label">QRZ.com ↗</span>
+              </a>
+              <a
+                href="https://www.eqsl.cc"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mobile-nav-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <span className="nav-icon">✉️</span>
+                <span className="nav-label">eQSL.cc ↗</span>
+              </a>
+            </div>
           </nav>
         )}
       </header>
@@ -160,6 +183,24 @@ export function AppLayout() {
           <span>{t("footer.text")}</span>
           <span className="footer-links">
             <NavLink to="/lookup">{t("footer.lookup")}</NavLink>
+            <span className="divider">·</span>
+            <a
+              href="https://www.qrz.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="QRZ Callsign Database & Logbook"
+            >
+              QRZ.com ↗
+            </a>
+            <span className="divider">·</span>
+            <a
+              href="https://www.eqsl.cc"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="eQSL Electronic QSL Card Centre"
+            >
+              eQSL.cc ↗
+            </a>
           </span>
         </div>
       </footer>

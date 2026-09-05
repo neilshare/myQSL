@@ -120,7 +120,41 @@ export function QsoListPage() {
           rows.map((row, index) => (
             <article key={String(row.id ?? index)}>
               <div className="qso-item-info">
-                <strong style={{ fontSize: "1.15rem", letterSpacing: "0.02em" }}>{String(row.call)}</strong>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap" }}>
+                  <strong style={{ fontSize: "1.15rem", letterSpacing: "0.02em" }}>{String(row.call)}</strong>
+                  <a
+                    href={`https://www.qrz.com/db/${encodeURIComponent(String(row.call))}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={`在 QRZ.com 查询 ${String(row.call)}`}
+                    style={{
+                      fontSize: "0.75rem",
+                      color: "var(--accent-primary)",
+                      textDecoration: "none",
+                      padding: "1px 5px",
+                      border: "1px solid var(--border-subtle)",
+                      borderRadius: "4px"
+                    }}
+                  >
+                    QRZ ↗
+                  </a>
+                  <a
+                    href={`https://www.eqsl.cc/qslcard/MemberProfile.cfm?Callsign=${encodeURIComponent(String(row.call))}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={`在 eQSL.cc 查询 ${String(row.call)}`}
+                    style={{
+                      fontSize: "0.75rem",
+                      color: "var(--accent-primary)",
+                      textDecoration: "none",
+                      padding: "1px 5px",
+                      border: "1px solid var(--border-subtle)",
+                      borderRadius: "4px"
+                    }}
+                  >
+                    eQSL ↗
+                  </a>
+                </div>
                 <span style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>{String(row.qso_date)} {String(row.time_on)} UTC</span>
                 <span
                   style={{

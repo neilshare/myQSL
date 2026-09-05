@@ -164,7 +164,9 @@ export const dictionaries = {
     footer: {
       text: "myQSL — 业余无线电电子 QSL 卡片与通联系统",
       lookup: "公开查验",
-      docs: "官方文档"
+      docs: "官方文档",
+      qrz: "QRZ.com",
+      eqsl: "eQSL.cc"
     }
   },
   en: {
@@ -328,7 +330,9 @@ export const dictionaries = {
     footer: {
       text: "myQSL — Amateur Radio Electronic QSL & Logbook System",
       lookup: "Public Lookup",
-      docs: "Documentation"
+      docs: "Documentation",
+      qrz: "QRZ.com",
+      eqsl: "eQSL.cc"
     }
   }
 } as const;
