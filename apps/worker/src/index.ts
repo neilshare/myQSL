@@ -60,5 +60,24 @@ app.all("/api/v1/*", (c) =>
 
 app.all("*", (c) => c.env.ASSETS.fetch(c.req.raw));
 
-export default { fetch: app.fetch } satisfies ExportedHandler<Env>;
+export default {
+  fetch: app.fetch,
+  async scheduled(controller, env, ctx) {
+    if (!env.D1_BACKUP_WORKFLOW) return;
+    ctx.waitUntil(
+      (async () => {
+        try {
+          const requestedAt = new Date(controller.scheduledTime).toISOString();
+          await env.D1_BACKUP_WORKFLOW.create({
+            params: { requested_at: requestedAt }
+          });
+        } catch (err) {
+          console.error("Failed to trigger scheduled D1 backup workflow:", err);
+        }
+      })()
+    );
+  }
+} satisfies ExportedHandler<Env>;
+
 export { D1BackupWorkflow };
+

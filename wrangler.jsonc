@@ -31,13 +31,15 @@
     "ACCESS_TEAM_DOMAIN": "https://myqsl.cloudflareaccess.com",
     "ACCESS_AUD": "myqsl-production-audience"
   },
+  "triggers": {
+    "crons": ["0 20 * * *"]
+  },
   "observability": { "enabled": true },
   "workflows": [
     {
       "name": "myqsl-d1-backup",
       "binding": "D1_BACKUP_WORKFLOW",
-      "class_name": "D1BackupWorkflow",
-      "schedules": ["0 20 * * *"]
+      "class_name": "D1BackupWorkflow"
     }
   ]
 }

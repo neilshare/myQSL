@@ -32,13 +32,15 @@
     "ACCESS_AUD": "local-development-audience",
     "TEST_AUTH_ENABLED": "1"
   },
+  "triggers": {
+    "crons": ["0 20 * * *"]
+  },
   "observability": { "enabled": true },
   "workflows": [
     {
       "name": "myqsl-d1-backup-local",
       "binding": "D1_BACKUP_WORKFLOW",
-      "class_name": "D1BackupWorkflow",
-      "schedules": ["0 20 * * *"]
+      "class_name": "D1BackupWorkflow"
     }
   ]
 }
