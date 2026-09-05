@@ -41,8 +41,12 @@ describe("frequency-helpers", () => {
     storageMock.clear();
   });
 
-  it("defines 10 default common frequencies covering U/V/40M/20M", () => {
-    expect(TOP_10_DEFAULT_FREQS).toHaveLength(10);
+  it("defines default common frequencies covering U/V/40M/20M with top 3 at the very top", () => {
+    expect(TOP_10_DEFAULT_FREQS).toHaveLength(13);
+    expect(TOP_10_DEFAULT_FREQS[0].freq).toBe("145.775");
+    expect(TOP_10_DEFAULT_FREQS[1].freq).toBe("145.725");
+    expect(TOP_10_DEFAULT_FREQS[2].freq).toBe("145.1");
+
     const freqs = TOP_10_DEFAULT_FREQS.map((p) => p.freq);
     expect(freqs).toContain("438.500");
     expect(freqs).toContain("439.750");
@@ -52,6 +56,9 @@ describe("frequency-helpers", () => {
   });
 
   it("maps frequencies to the correct amateur bands bidirectionally", () => {
+    expect(getBandFromFreq("145.775")).toBe("2M");
+    expect(getBandFromFreq("145.725")).toBe("2M");
+    expect(getBandFromFreq("145.1")).toBe("2M");
     expect(getBandFromFreq("438.500")).toBe("70CM");
     expect(getBandFromFreq("439.750")).toBe("70CM");
     expect(getBandFromFreq("145.000")).toBe("2M");

@@ -4,7 +4,10 @@ export interface FreqPreset {
   label: string;
 }
 
-export const TOP_10_DEFAULT_FREQS: FreqPreset[] = [
+export const DEFAULT_FREQ_PRESETS: FreqPreset[] = [
+  { freq: "145.775", band: "2M", label: "145.775 MHz (2M 常用中继频点)" },
+  { freq: "145.725", band: "2M", label: "145.725 MHz (2M 常用中继频点)" },
+  { freq: "145.1", band: "2M", label: "145.1 MHz (2M 常用频点/中继 145.100)" },
   { freq: "438.500", band: "70CM", label: "438.500 MHz (70CM 全国直频呼叫/日常守候)" },
   { freq: "439.750", band: "70CM", label: "439.750 MHz (70CM 经典中继下行 -5MHz 北京/华北)" },
   { freq: "439.460", band: "70CM", label: "439.460 MHz (70CM 骨干互联中继下行 -5MHz)" },
@@ -16,6 +19,8 @@ export const TOP_10_DEFAULT_FREQS: FreqPreset[] = [
   { freq: "7.050", band: "40M", label: "7.050 MHz (40M 短波华语通联常用频点 LSB)" },
   { freq: "14.270", band: "20M", label: "14.270 MHz (20M 短波华语呼叫主频 USB)" }
 ];
+
+export const TOP_10_DEFAULT_FREQS = DEFAULT_FREQ_PRESETS;
 
 export const FREQ_STORAGE_KEY = "myqsl_freq_history";
 

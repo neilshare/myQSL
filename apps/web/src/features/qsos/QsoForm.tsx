@@ -302,7 +302,7 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
             }}
           >
             <option value="">{locale === "zh" ? "▼ 快捷选择常用/中继/历史频率" : "▼ Quick Select Common/Repeater/History"}</option>
-            <optgroup label={locale === "zh" ? "各地常用中继与呼叫 (Top 10)" : "Common & Repeaters (Top 10)"}>
+            <optgroup label={locale === "zh" ? "常用中继与推荐频点" : "Common Repeaters & Frequencies"}>
               {TOP_10_DEFAULT_FREQS.map((p) => (
                 <option key={`select-${p.freq}`} value={p.freq}>
                   {p.label}
