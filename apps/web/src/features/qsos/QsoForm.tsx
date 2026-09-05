@@ -194,15 +194,44 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
   const modeLabel = locale === "zh" ? "模式" : t("qsos.mode");
   const saveLabel = locale === "zh" ? "保存" : t("common.save");
 
+  const fieldHeaderStyle: React.CSSProperties = {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    height: "26px",
+    minHeight: "26px",
+    maxHeight: "26px",
+    marginBottom: "0.35rem",
+    boxSizing: "border-box"
+  };
+
+  const labelStyle: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    margin: 0,
+    padding: 0,
+    fontSize: "0.88rem",
+    fontWeight: 500,
+    color: "var(--text-muted)",
+    lineHeight: 1
+  };
+
   return (
     <form onSubmit={submit} aria-label={locale === "zh" ? "QSO 表单" : "QSO Form"}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.75rem" }}>
-        <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
-            <label htmlFor="qso-call-input" style={{ margin: 0, fontWeight: 500 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+          gap: "0.75rem",
+          alignItems: "start"
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={fieldHeaderStyle}>
+            <label htmlFor="qso-call-input" style={labelStyle}>
               {callLabel}
             </label>
-            <div style={{ display: "flex", gap: "0.35rem", fontSize: "0.75rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.75rem" }}>
               <a
                 href={value.call.trim() ? `https://www.qrz.com/db/${encodeURIComponent(value.call.trim().toUpperCase())}` : "https://www.qrz.com"}
                 target="_blank"
@@ -234,9 +263,14 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
             placeholder={locale === "zh" ? "例如 BG4YYY" : "e.g. BG4YYY"}
           />
         </div>
-        <label>
-          {stationLabel}
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={fieldHeaderStyle}>
+            <label htmlFor="qso-station-input" style={labelStyle}>
+              {stationLabel}
+            </label>
+          </div>
           <input
+            id="qso-station-input"
             aria-label={stationLabel}
             value={value.station_callsign}
             disabled={isEditing}
@@ -252,10 +286,10 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
               ))}
             </datalist>
           )}
-        </label>
-        <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
-            <label htmlFor="qso-date-input" style={{ margin: 0, fontWeight: 500 }}>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={fieldHeaderStyle}>
+            <label htmlFor="qso-date-input" style={labelStyle}>
               {dateLabel}
             </label>
             {!isEditing && (
@@ -266,14 +300,18 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
                   setValue((v) => ({ ...v, qso_date: utc.qso_date, time_on: utc.time_on }));
                 }}
                 style={{
-                  minHeight: "auto",
-                  padding: "1px 6px",
+                  height: "22px",
+                  minHeight: "22px",
+                  lineHeight: "20px",
+                  padding: "0 6px",
                   fontSize: "0.75rem",
                   background: "transparent",
                   color: "var(--accent-primary)",
                   border: "1px solid var(--border-subtle)",
                   borderRadius: "4px",
-                  cursor: "pointer"
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center"
                 }}
                 title={locale === "zh" ? "刷新为系统当前 UTC 日期与时间" : "Sync with system current UTC date & time"}
               >
@@ -283,6 +321,7 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
           </div>
           <input
             id="qso-date-input"
+            aria-label={dateLabel}
             type="text"
             value={value.qso_date}
             disabled={isEditing}
@@ -291,12 +330,15 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
             placeholder="YYYYMMDD"
           />
         </div>
-        <div>
-          <label htmlFor="qso-time-input" style={{ display: "block", marginBottom: "0.25rem", fontWeight: 500 }}>
-            {timeLabel}
-          </label>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={fieldHeaderStyle}>
+            <label htmlFor="qso-time-input" style={labelStyle}>
+              {timeLabel}
+            </label>
+          </div>
           <input
             id="qso-time-input"
+            aria-label={timeLabel}
             type="text"
             value={value.time_on}
             disabled={isEditing}
@@ -305,10 +347,12 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
             placeholder="HHMMSS"
           />
         </div>
-        <div>
-          <label htmlFor="qso-band-input" style={{ display: "block", marginBottom: "0.25rem", fontWeight: 500 }}>
-            {bandLabel}
-          </label>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={fieldHeaderStyle}>
+            <label htmlFor="qso-band-input" style={labelStyle}>
+              {bandLabel}
+            </label>
+          </div>
           <input
             id="qso-band-input"
             aria-label={bandLabel}
@@ -336,6 +380,7 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
               fontSize: "0.8rem",
               padding: "0.3rem 0.5rem",
               minHeight: "34px",
+              height: "34px",
               color: "var(--text-muted)",
               backgroundColor: "var(--bg-input)"
             }}
@@ -348,13 +393,13 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
             ))}
           </select>
         </div>
-        <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
-            <label htmlFor="qso-freq-input" style={{ margin: 0, fontWeight: 500 }}>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={fieldHeaderStyle}>
+            <label htmlFor="qso-freq-input" style={labelStyle}>
               {freqLabel}
             </label>
             {value.freq_mhz && (
-              <span style={{ fontSize: "0.75rem", color: "var(--accent-primary)" }}>
+              <span style={{ fontSize: "0.75rem", color: "var(--accent-primary)", display: "inline-flex", alignItems: "center" }}>
                 {getBandFromFreq(value.freq_mhz) ? `→ ${getBandFromFreq(value.freq_mhz)}` : ""}
               </span>
             )}
@@ -389,6 +434,7 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
               fontSize: "0.8rem",
               padding: "0.3rem 0.5rem",
               minHeight: "34px",
+              height: "34px",
               color: "var(--text-muted)",
               backgroundColor: "var(--bg-input)"
             }}
@@ -433,16 +479,21 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
             )}
           </select>
         </div>
-        <label>
-          {modeLabel}
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={fieldHeaderStyle}>
+            <label htmlFor="qso-mode-input" style={labelStyle}>
+              {modeLabel}
+            </label>
+          </div>
           <input
+            id="qso-mode-input"
             aria-label={modeLabel}
             value={value.mode}
             onChange={(event) => setValue({ ...value, mode: event.target.value })}
             required
             placeholder={locale === "zh" ? "例如 SSB, FT8, FM" : "e.g. SSB, FT8, FM"}
           />
-        </label>
+        </div>
       </div>
       <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap", marginTop: "0.25rem" }}>
         <button type="submit" style={{ minWidth: "120px" }}>{saveLabel}</button>

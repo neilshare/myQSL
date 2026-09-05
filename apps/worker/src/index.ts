@@ -58,7 +58,22 @@ app.all("/api/v1/*", (c) =>
   problem(404, Problems.notFound, "Not found", "API route not found", c.req.path)
 );
 
-app.all("*", (c) => c.env.ASSETS.fetch(c.req.raw));
+app.all("*", async (c) => {
+  const res = await c.env.ASSETS.fetch(c.req.raw);
+  const pathname = new URL(c.req.url).pathname;
+  if (pathname === "/" || pathname === "/index.html" || pathname === "/sw.js" || pathname.endsWith(".html")) {
+    const headers = new Headers(res.headers);
+    headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
+    headers.set("Pragma", "no-cache");
+    headers.set("Expires", "0");
+    return new Response(res.body, {
+      status: res.status,
+      statusText: res.statusText,
+      headers
+    });
+  }
+  return res;
+});
 
 export default {
   fetch: app.fetch,
