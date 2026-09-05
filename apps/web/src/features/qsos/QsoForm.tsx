@@ -1,15 +1,43 @@
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { api } from "../../lib/api-client";
 import { useI18n } from "../../lib/i18n";
 
 type QsoFormValue = { id?: number; call: string; station_callsign: string; qso_date: string; time_on: string; band: string; mode: string; comment?: string };
 type QsoFormApi = { patch: (id: number, patch: Record<string, unknown>, etag: string) => Promise<unknown>; create?: (input: Record<string, unknown>) => Promise<unknown> };
 
+export function getCurrentUtcDateTime(): { qso_date: string; time_on: string } {
+  const now = new Date();
+  const year = now.getUTCFullYear();
+  const month = String(now.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(now.getUTCDate()).padStart(2, "0");
+  const hours = String(now.getUTCHours()).padStart(2, "0");
+  const minutes = String(now.getUTCMinutes()).padStart(2, "0");
+  const seconds = String(now.getUTCSeconds()).padStart(2, "0");
+
+  return {
+    qso_date: `${year}${month}${day}`,
+    time_on: `${hours}${minutes}${seconds}`
+  };
+}
+
 export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { initial: QsoFormValue; etag?: string; api?: QsoFormApi; onSaved?: () => void }) {
   const { t, locale } = useI18n();
-  const [value, setValue] = useState(initial);
+  const [value, setValue] = useState<QsoFormValue>(() => {
+    const utc = getCurrentUtcDateTime();
+    return {
+      ...initial,
+      qso_date: initial.qso_date || utc.qso_date,
+      time_on: initial.time_on || utc.time_on
+    };
+  });
   const [message, setMessage] = useState<string | null>(null);
   const isEditing = Boolean(value.id && etag);
+
+  useEffect(() => {
+    if (initial.id) {
+      setValue(initial);
+    }
+  }, [initial.id]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -28,6 +56,13 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
           time_on: value.time_on.length === 4 ? `${value.time_on}00` : value.time_on
         };
         await formApi.create(createPayload);
+        const nextUtc = getCurrentUtcDateTime();
+        setValue((prev) => ({
+          ...prev,
+          call: "",
+          qso_date: nextUtc.qso_date,
+          time_on: nextUtc.time_on
+        }));
       }
       setMessage(locale === "zh" ? "已保存" : "Saved");
       onSaved?.();
@@ -69,9 +104,36 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
             placeholder={locale === "zh" ? "例如 BI1ABC" : "e.g. BI1ABC"}
           />
         </label>
-        <label>
-          {dateLabel}
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
+            <label htmlFor="qso-date-input" style={{ margin: 0, fontWeight: 500 }}>
+              {dateLabel}
+            </label>
+            {!isEditing && (
+              <button
+                type="button"
+                onClick={() => {
+                  const utc = getCurrentUtcDateTime();
+                  setValue((v) => ({ ...v, qso_date: utc.qso_date, time_on: utc.time_on }));
+                }}
+                style={{
+                  minHeight: "auto",
+                  padding: "1px 6px",
+                  fontSize: "0.75rem",
+                  background: "transparent",
+                  color: "var(--accent-primary)",
+                  border: "1px solid var(--border-subtle)",
+                  borderRadius: "4px",
+                  cursor: "pointer"
+                }}
+                title={locale === "zh" ? "刷新为系统当前 UTC 日期与时间" : "Sync with system current UTC date & time"}
+              >
+                ⏱️ {locale === "zh" ? "当前 UTC" : "Now"}
+              </button>
+            )}
+          </div>
           <input
+            id="qso-date-input"
             type="text"
             value={value.qso_date}
             disabled={isEditing}
@@ -79,10 +141,13 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
             required
             placeholder="YYYYMMDD"
           />
-        </label>
-        <label>
-          {timeLabel}
+        </div>
+        <div>
+          <label htmlFor="qso-time-input" style={{ display: "block", marginBottom: "0.25rem", fontWeight: 500 }}>
+            {timeLabel}
+          </label>
           <input
+            id="qso-time-input"
             type="text"
             value={value.time_on}
             disabled={isEditing}
@@ -90,7 +155,7 @@ export function QsoForm({ initial, etag, api: formApi = api.qsos, onSaved }: { i
             required
             placeholder="HHMMSS"
           />
-        </label>
+        </div>
         <label>
           {bandLabel}
           <input

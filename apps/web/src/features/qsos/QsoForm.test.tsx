@@ -36,5 +36,23 @@ describe("QsoForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "保存" }));
     expect(create).toHaveBeenCalledWith(expect.objectContaining({ call: "BG4YYY/P" }));
   });
+
+  it("automatically populates current UTC date and time when initial values are empty", () => {
+    render(
+      <QsoForm
+        initial={{ call: "", station_callsign: "BI1ABC", qso_date: "", time_on: "", band: "", mode: "" }}
+      />
+    );
+    const dateInput = screen.getByLabelText("UTC 日期") as HTMLInputElement;
+    const timeInput = screen.getByLabelText("UTC 时间") as HTMLInputElement;
+    expect(dateInput.value).toMatch(/^\d{8}$/);
+    expect(timeInput.value).toMatch(/^\d{6}$/);
+
+    const refreshBtn = screen.getByRole("button", { name: /当前 UTC/i });
+    expect(refreshBtn).toBeTruthy();
+    fireEvent.click(refreshBtn);
+    expect(dateInput.value).toMatch(/^\d{8}$/);
+    expect(timeInput.value).toMatch(/^\d{6}$/);
+  });
 });
 

@@ -160,8 +160,6 @@ export function AppLayout() {
           <span>{t("footer.text")}</span>
           <span className="footer-links">
             <NavLink to="/lookup">{t("footer.lookup")}</NavLink>
-            <span className="divider">·</span>
-            <a href="https://myqsl.app" target="_blank" rel="noreferrer">{t("footer.docs")}</a>
           </span>
         </div>
       </footer>
