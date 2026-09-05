@@ -16,7 +16,7 @@ export function CardCreatePage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
-    void api.qsos.list().then((res) => {
+    void api.qsos.list("?limit=100").then((res) => {
       const raw = res.data;
       const data = Array.isArray(raw) ? raw : (Array.isArray((raw as any)?.data) ? (raw as any).data : []);
       setQsos(data);
