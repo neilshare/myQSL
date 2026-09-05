@@ -5,8 +5,14 @@ import { fileURLToPath } from "node:url";
 export interface ProductionConfigTarget {
   appEnv?: string;
   publicOrigin?: string;
+  accessTeamDomain?: string;
+  accessAud?: string;
   testAuthEnabled?: string;
   d1DatabaseId?: string;
+  hasDbBinding?: boolean;
+  hasMediaBinding?: boolean;
+  hasRateLimiterBinding?: boolean;
+  hasBackupWorkflowBinding?: boolean;
   existingSecrets?: string[];
   requiredSecrets?: string[];
 }
@@ -56,7 +62,29 @@ export function validateProductionConfig(target: ProductionConfigTarget): {
     }
   }
 
-  // 3. D1 database_id check (no placeholder UUID)
+  // 3. ACCESS_TEAM_DOMAIN check
+  if (target.accessTeamDomain) {
+    try {
+      const url = new URL(target.accessTeamDomain);
+      if (url.protocol !== "https:") {
+        issues.push({ field: "ACCESS_TEAM_DOMAIN", message: `ACCESS_TEAM_DOMAIN must use HTTPS protocol, received '${target.accessTeamDomain}'`, severity: "error" });
+      }
+      if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
+        issues.push({ field: "ACCESS_TEAM_DOMAIN", message: "ACCESS_TEAM_DOMAIN must not point to localhost in production", severity: "error" });
+      }
+    } catch {
+      issues.push({ field: "ACCESS_TEAM_DOMAIN", message: `ACCESS_TEAM_DOMAIN is not a valid URL: '${target.accessTeamDomain}'`, severity: "error" });
+    }
+  }
+
+  // 4. ACCESS_AUD check
+  if (target.accessAud !== undefined) {
+    if (!target.accessAud || target.accessAud === "local-development-audience") {
+      issues.push({ field: "ACCESS_AUD", message: "ACCESS_AUD must be configured with a production audience (received placeholder or empty)", severity: "error" });
+    }
+  }
+
+  // 5. D1 database_id check (no placeholder UUID)
   if (!target.d1DatabaseId) {
     issues.push({ field: "D1_DATABASE_ID", message: "D1 database_id is required", severity: "error" });
   } else if (DUMMY_UUID_PATTERN.test(target.d1DatabaseId) || target.d1DatabaseId.startsWith("00000000-")) {
@@ -65,14 +93,28 @@ export function validateProductionConfig(target: ProductionConfigTarget): {
     issues.push({ field: "D1_DATABASE_ID", message: `D1 database_id is not a valid UUID: '${target.d1DatabaseId}'`, severity: "error" });
   }
 
-  // 4. TEST_AUTH_ENABLED check
+  // 6. TEST_AUTH_ENABLED check
   if (target.testAuthEnabled === "1") {
     issues.push({ field: "TEST_AUTH_ENABLED", message: "TEST_AUTH_ENABLED must be '0' or unset in production", severity: "error" });
   }
 
-  // 5. Secrets check (if secret list provided)
+  // 7. Core Bindings check (DB, MEDIA, PUBLIC_RATE_LIMITER, D1_BACKUP_WORKFLOW)
+  if (target.hasDbBinding === false) {
+    issues.push({ field: "BINDING:DB", message: "D1 database binding 'DB' is missing in production configuration", severity: "error" });
+  }
+  if (target.hasMediaBinding === false) {
+    issues.push({ field: "BINDING:MEDIA", message: "R2 bucket binding 'MEDIA' is missing in production configuration", severity: "error" });
+  }
+  if (target.hasRateLimiterBinding === false) {
+    issues.push({ field: "BINDING:PUBLIC_RATE_LIMITER", message: "Rate limiter binding 'PUBLIC_RATE_LIMITER' is missing in production configuration", severity: "error" });
+  }
+  if (target.hasBackupWorkflowBinding === false) {
+    issues.push({ field: "BINDING:D1_BACKUP_WORKFLOW", message: "Workflow binding 'D1_BACKUP_WORKFLOW' is missing in production configuration", severity: "error" });
+  }
+
+  // 8. Secrets check (Fail-Closed: empty array means all required secrets missing)
   const required = target.requiredSecrets ?? DEFAULT_REQUIRED_SECRETS;
-  if (target.existingSecrets && target.existingSecrets.length > 0) {
+  if (target.existingSecrets !== undefined) {
     for (const secret of required) {
       if (!target.existingSecrets.includes(secret)) {
         issues.push({ field: `SECRET:${secret}`, message: `Required production secret '${secret}' is missing`, severity: "error" });
@@ -139,26 +181,36 @@ async function runCli(): Promise<void> {
     process.exit(1);
   }
 
-  const prodEnv = wrangler.env?.production ?? {};
-  const prodVars = { ...wrangler.vars, ...prodEnv.vars };
-  const prodD1 = prodEnv.d1_databases?.[0] ?? wrangler.d1_databases?.[0];
+  if (wrangler.env?.production) {
+    console.warn("⚠️ Warning: wrangler.jsonc contains a nested env.production block. Top-level configuration must be the production target to prevent binding inheritance failure.");
+  }
+
+  const vars = wrangler.vars ?? {};
+  const d1Binding = wrangler.d1_databases?.[0];
 
   const target: ProductionConfigTarget = {
-    appEnv: process.env.APP_ENV ?? prodVars.APP_ENV,
-    publicOrigin: process.env.PUBLIC_ORIGIN ?? prodVars.PUBLIC_ORIGIN,
-    testAuthEnabled: process.env.TEST_AUTH_ENABLED ?? prodVars.TEST_AUTH_ENABLED,
-    d1DatabaseId: process.env.D1_DATABASE_ID ?? prodD1?.database_id,
+    appEnv: process.env.APP_ENV ?? vars.APP_ENV,
+    publicOrigin: process.env.PUBLIC_ORIGIN ?? vars.PUBLIC_ORIGIN,
+    accessTeamDomain: process.env.ACCESS_TEAM_DOMAIN ?? vars.ACCESS_TEAM_DOMAIN,
+    accessAud: process.env.ACCESS_AUD ?? vars.ACCESS_AUD,
+    testAuthEnabled: process.env.TEST_AUTH_ENABLED ?? vars.TEST_AUTH_ENABLED,
+    d1DatabaseId: process.env.D1_DATABASE_ID ?? d1Binding?.database_id,
+    hasDbBinding: Boolean(wrangler.d1_databases?.some((d: any) => d.binding === "DB")),
+    hasMediaBinding: Boolean(wrangler.r2_buckets?.some((b: any) => b.binding === "MEDIA")),
+    hasRateLimiterBinding: Boolean(wrangler.ratelimits?.some((r: any) => r.name === "PUBLIC_RATE_LIMITER")),
+    hasBackupWorkflowBinding: Boolean(wrangler.workflows?.some((w: any) => w.binding === "D1_BACKUP_WORKFLOW")),
     requiredSecrets: DEFAULT_REQUIRED_SECRETS
   };
 
   const remoteSecrets = skipSecrets ? null : fetchRemoteSecrets();
-  if (remoteSecrets) {
+  if (remoteSecrets !== null) {
     target.existingSecrets = remoteSecrets;
     console.log(`🔐 Found ${remoteSecrets.length} remote secret(s) in Cloudflare.`);
   } else if (skipSecrets) {
     console.log("ℹ️ Remote secrets check explicitly skipped via flag or SKIP_REMOTE_SECRETS.");
   } else {
-    console.log("ℹ️ Remote secrets could not be retrieved via wrangler CLI (offline or no token). Skipping remote secret existence validation.");
+    console.error("❌ Remote secrets could not be retrieved via wrangler CLI (fail-closed). Missing secrets will be enforced.");
+    target.existingSecrets = [];
   }
 
   const result = validateProductionConfig(target);
@@ -167,7 +219,13 @@ async function runCli(): Promise<void> {
   console.log(`  - Environment: ${target.appEnv ?? "unset"}`);
   console.log(`  - Public Origin: ${target.publicOrigin ?? "unset"}`);
   console.log(`  - D1 Database ID: ${target.d1DatabaseId ?? "unset"}`);
+  console.log(`  - Access Team Domain: ${target.accessTeamDomain ?? "unset"}`);
+  console.log(`  - Access AUD: ${target.accessAud ?? "unset"}`);
   console.log(`  - Test Auth Disabled: ${target.testAuthEnabled !== "1"}`);
+  console.log(`  - DB Binding: ${target.hasDbBinding ? "present" : "MISSING"}`);
+  console.log(`  - Media Binding: ${target.hasMediaBinding ? "present" : "MISSING"}`);
+  console.log(`  - Rate Limiter Binding: ${target.hasRateLimiterBinding ? "present" : "MISSING"}`);
+  console.log(`  - Workflow Binding: ${target.hasBackupWorkflowBinding ? "present" : "MISSING"}`);
 
   if (result.issues.length > 0) {
     console.log("\n⚠️ Issues Identified:");

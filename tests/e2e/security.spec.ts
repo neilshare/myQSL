@@ -27,6 +27,18 @@ test.describe("Security boundaries and authorization enforcement", () => {
     }
   });
 
+  test("protected management APIs reject invalid bearer tokens with 401", async ({ request }) => {
+    const res = await request.get("/api/v1/qsos", {
+      headers: {
+        Authorization: "Bearer invalid-or-malicious-token"
+      }
+    });
+    expect(res.status()).toBe(401);
+    const json = (await res.json()) as { status: number; type: string };
+    expect(json.status).toBe(401);
+    expect(json.type).toContain("problems/auth-required");
+  });
+
   test("readyz is accessible when authenticated as owner", async ({ authedRequest }) => {
     const res = await authedRequest.get("/readyz");
     expect(res.status()).toBe(200);

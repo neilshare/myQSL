@@ -13,7 +13,7 @@
    wrangler secret put ACCESS_AUD
    wrangler secret put RATE_LIMIT_SALT
    ```
-3. 确认环境变量设置：`APP_ENV=production`、`PUBLIC_ORIGIN=https://<operator-domain>`、`TEST_AUTH_ENABLED=0`。所有敏感凭据仅保存在 Cloudflare Secret，严禁提交到代码仓库。
+3. 确认环境变量设置：`wrangler.jsonc` 顶层为唯一生产配置（持有全量 Bindings），配置 `APP_ENV=production`、`PUBLIC_ORIGIN=https://<operator-domain>`，无测试身份旁路（无 `TEST_AUTH_ENABLED`）；本地开发与集成测试使用隔离的 `wrangler.test.jsonc`。所有敏感凭据仅保存在 Cloudflare Secret，严禁提交到代码仓库。
 
 ## 2. GitHub 仓库与分支保护策略
 

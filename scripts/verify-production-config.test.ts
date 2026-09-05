@@ -72,6 +72,51 @@ describe("validateProductionConfig", () => {
     expect(missingSecret.issues.some((i) => i.field === "SECRET:ACCESS_AUD")).toBe(true);
     expect(missingSecret.issues.some((i) => i.field === "SECRET:RATE_LIMIT_SALT")).toBe(true);
   });
+
+  it("rejects when existingSecrets is an empty array (fail-closed)", () => {
+    const emptySecrets = validateProductionConfig({
+      ...validTarget,
+      existingSecrets: []
+    });
+    expect(emptySecrets.valid).toBe(false);
+    expect(emptySecrets.issues.some((i) => i.field === "SECRET:D1_REST_API_TOKEN")).toBe(true);
+    expect(emptySecrets.issues.some((i) => i.field === "SECRET:ACCESS_AUD")).toBe(true);
+    expect(emptySecrets.issues.some((i) => i.field === "SECRET:RATE_LIMIT_SALT")).toBe(true);
+  });
+
+  it("rejects missing required bindings", () => {
+    const missingDb = validateProductionConfig({ ...validTarget, hasDbBinding: false });
+    expect(missingDb.valid).toBe(false);
+    expect(missingDb.issues.some((i) => i.field === "BINDING:DB")).toBe(true);
+
+    const missingMedia = validateProductionConfig({ ...validTarget, hasMediaBinding: false });
+    expect(missingMedia.valid).toBe(false);
+    expect(missingMedia.issues.some((i) => i.field === "BINDING:MEDIA")).toBe(true);
+
+    const missingRateLimiter = validateProductionConfig({ ...validTarget, hasRateLimiterBinding: false });
+    expect(missingRateLimiter.valid).toBe(false);
+    expect(missingRateLimiter.issues.some((i) => i.field === "BINDING:PUBLIC_RATE_LIMITER")).toBe(true);
+
+    const missingWorkflow = validateProductionConfig({ ...validTarget, hasBackupWorkflowBinding: false });
+    expect(missingWorkflow.valid).toBe(false);
+    expect(missingWorkflow.issues.some((i) => i.field === "BINDING:D1_BACKUP_WORKFLOW")).toBe(true);
+  });
+
+  it("rejects invalid or placeholder ACCESS configuration", () => {
+    const invalidAccessUrl = validateProductionConfig({
+      ...validTarget,
+      accessTeamDomain: "http://myqsl.cloudflareaccess.com"
+    });
+    expect(invalidAccessUrl.valid).toBe(false);
+    expect(invalidAccessUrl.issues.some((i) => i.field === "ACCESS_TEAM_DOMAIN")).toBe(true);
+
+    const placeholderAud = validateProductionConfig({
+      ...validTarget,
+      accessAud: "local-development-audience"
+    });
+    expect(placeholderAud.valid).toBe(false);
+    expect(placeholderAud.issues.some((i) => i.field === "ACCESS_AUD")).toBe(true);
+  });
 });
 
 describe("verify-production-config CLI", () => {
