@@ -9,13 +9,13 @@
 
 ## 2. 交付流水线与分支保护
 - [ ] GitHub 生产分支 `main` 开启分支保护规则，禁止 Force Push，禁止删除分支。
-- [ ] Pull Request 必需通过 `ci / check`（含 Lint、Typecheck、Unit Tests、Worker Tests、Build）后方可合并。
+- [ ] Pull Request 必需通过 `ci / verify`（含 OpenAPI 生成一致性、预检、Lint、Typecheck、Unit Tests、Worker Tests、Bundle 预算、Playholders 及 E2E）后方可合并。
 - [ ] Cloudflare Workers Builds 关联仓库 `main` 分支作为唯一生产发布流水线。
-- [ ] 生产部署命令包含 `pnpm verify:production` 强制预检门禁。
+- [ ] 生产部署命令包含 `pnpm verify:production --strict` 强制预检门禁。
 
 ## 3. 全真容灾演练与应急验证
-- [ ] 执行全量数据库备份并导出至 R2，记录导出的备份对象 Key。
-- [ ] 在独立离线 SQLite 实例中执行完整恢复导入，运行 `pnpm tsx scripts/verify-backup.mts` 并输出 `RESTORE_VERIFIED tables=9`。
+- [ ] 执行全量数据库备份并导出至 R2，记录导出的备份对象 Key 与 content_sha256。
+- [ ] 在独立离线 SQLite 实例中执行完整恢复导入，运行 `pnpm tsx scripts/verify-backup.mts --sql <file> --manifest <manifest.json>` 并输出包含行数比对与样本散列的 `RESTORE_VERIFIED` 证据。
 - [ ] 验证上一版本 Worker 回滚演练，确认公开端 `/healthz` 与卡片查验页面平滑稳定无抖动。
 
 ## 4. 生产监控与网络可达性（7 天观察期）

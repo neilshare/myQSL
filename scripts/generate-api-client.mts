@@ -158,7 +158,7 @@ export function generateApiTypes(schemas: Record<string, ParsedSchema>): string 
     'export type { CardTemplate, QsoInput, StationInput } from "@myqsl/domain";\n'
   ];
 
-  const TARGET_SCHEMAS = ["QsoRecord", "StationRecord", "CardTemplateRow", "CardRow", "PublicCardSummary"];
+  const TARGET_SCHEMAS = ["QsoRecord", "StationRecord", "CardTemplateRow", "CardRow", "PublicCardSummary", "BackupRun"];
 
   for (const name of TARGET_SCHEMAS) {
     const s = schemas[name];

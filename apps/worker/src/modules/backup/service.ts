@@ -16,7 +16,15 @@ export class BackupService {
   async createRun(requestedAt: string, instanceId: string): Promise<BackupRunRow> {
     const existing = await this.repository.running();
     if (existing) {
-      await this.repository.fail(existing.id, "DUPLICATE_RUNNING", this.now());
+      if (existing.workflow_instance_id === instanceId) {
+        return existing;
+      }
+      const isStale = (this.now() - existing.started_at) > 3600 * 1000;
+      if (isStale) {
+        await this.repository.fail(existing.id, "STALE_TIMEOUT", this.now());
+      } else {
+        throw new Error("CONCURRENT_BACKUP_RUNNING");
+      }
     }
     return this.repository.create({
       id: nanoid(16),
@@ -88,7 +96,7 @@ export class BackupService {
     signedUrl: string,
     requestedAt: string,
     instanceId: string
-  ): Promise<{ key: string; etag: string; size: number }> {
+  ): Promise<{ key: string; etag: string; size: number; sha256: string }> {
     const download = await this.fetcher(signedUrl);
     if (!download.ok || !download.body) throw new Error("DOWNLOAD_FAILED");
 
@@ -96,6 +104,11 @@ export class BackupService {
     const isFirstDayOfMonth = requestedAt.slice(8, 10) === "01";
 
     const buffer = await download.arrayBuffer();
+    const digestBuf = await crypto.subtle.digest("SHA-256", buffer);
+    const sha256 = Array.from(new Uint8Array(digestBuf))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
     const object = await this.media.put(dailyKey, buffer, {
       httpMetadata: {
         contentType: "application/sql",
@@ -106,29 +119,32 @@ export class BackupService {
 
     if (isFirstDayOfMonth) {
       const monthlyKey = `backups/monthly/${requestedAt.slice(0, 4)}/${requestedAt.slice(5, 7)}/${instanceId}.sql`;
-      await this.media.put(monthlyKey, buffer, {
+      const monthlyObject = await this.media.put(monthlyKey, buffer, {
         httpMetadata: {
           contentType: "application/sql",
           cacheControl: "private, max-age=31536000, immutable"
         }
       });
+      if (!monthlyObject) throw new Error("R2_MONTHLY_WRITE_FAILED");
     }
 
     return {
       key: dailyKey,
       etag: object.etag,
-      size: object.size
+      size: object.size,
+      sha256
     };
   }
 
   async completeRun(
     runId: string,
-    input: { bookmark: string; key: string; etag: string; size: number }
+    input: { bookmark: string; key: string; etag: string; size: number; sha256?: string | null }
   ): Promise<BackupRunRow> {
     return this.repository.complete(runId, {
       bookmark: input.bookmark,
       key: input.key,
       etag: input.etag,
+      sha256: input.sha256,
       size: input.size,
       finishedAt: this.now()
     });
@@ -142,7 +158,16 @@ export class BackupService {
     requestedAt = new Date(this.now()).toISOString(),
     instanceId = nanoid(16)
   ): Promise<BackupRunRow> {
-    const run = await this.createRun(requestedAt, instanceId);
+    let run: BackupRunRow;
+    try {
+      run = await this.createRun(requestedAt, instanceId);
+    } catch (err: any) {
+      if (err?.message === "CONCURRENT_BACKUP_RUNNING") {
+        const current = await this.repository.running();
+        if (current) return current;
+      }
+      throw err;
+    }
     if (!this.config.accountId || !this.config.databaseId || !this.config.token) {
       return this.failRun(run.id, "EXPORT_UNAVAILABLE");
     }
@@ -172,6 +197,7 @@ export class BackupService {
         bookmark: ready.bookmark,
         key: stored.key,
         etag: stored.etag,
+        sha256: stored.sha256,
         size: stored.size
       });
     } catch (err: any) {

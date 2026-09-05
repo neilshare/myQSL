@@ -78,3 +78,18 @@ export interface PublicCardSummary {
   qso_date: string;
   created_at: number;
 }
+
+export interface BackupRun {
+  id: string;
+  workflow_instance_id: string;
+  export_bookmark?: string | null;
+  object_key?: string | null;
+  r2_etag?: string | null;
+  content_sha256?: string | null;
+  size_bytes?: number | null;
+  status: "running" | "completed" | "failed";
+  error_code?: string | null;
+  started_at: number;
+  finished_at?: number | null;
+  verified_at?: number | null;
+}

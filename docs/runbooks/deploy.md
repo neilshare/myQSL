@@ -20,7 +20,7 @@
 1. 生产代码基线分支锁定为 `main`。
 2. 开启 GitHub 分支保护规则：
    - 勾选 `Require a pull request before merging`；
-   - 勾选 `Require status checks to pass before merging`，强制要求 `ci / check` 门禁检查全绿；
+   - 勾选 `Require status checks to pass before merging`，强制要求 `ci / verify` 门禁检查全绿；
    - 勾选 `Do not allow bypassing the above settings`；
    - 严禁对 `main` 分支执行强制推送（Force Push）或直接删除分支。
 
@@ -31,7 +31,7 @@
 - **Build system**: Cloudflare Workers Builds
 - **Root directory**: `/`
 - **Build command**: `corepack enable && pnpm install --frozen-lockfile && pnpm run check`
-- **Deploy command**: `pnpm verify:production && pnpm db:migrate:prod && pnpm deploy:prod`
+- **Deploy command**: `pnpm verify:production --strict && pnpm db:migrate:prod && pnpm deploy:prod`
 
 流水线在合并至 `main` 后自动触发：
 1. `pnpm run check` 门禁：执行静态分析、依赖环路检查、TypeScript 编译检查、核心包测试与 Worker 测试；

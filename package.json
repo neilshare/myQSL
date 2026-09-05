@@ -17,6 +17,7 @@
     "check:bundle": "tsx scripts/check-bundle.mts",
     "check:placeholders": "tsx scripts/check-placeholders.mts",
     "verify:production": "tsx scripts/verify-production-config.mts",
+    "verify:backup": "tsx scripts/verify-backup.mts",
     "dev": "pnpm build && wrangler d1 migrations apply DB --local --config wrangler.test.jsonc && wrangler dev --config wrangler.test.jsonc",
     "db:migrate:local": "wrangler d1 migrations apply DB --local --config wrangler.test.jsonc",
     "db:migrate:prod": "wrangler d1 migrations apply DB --remote",

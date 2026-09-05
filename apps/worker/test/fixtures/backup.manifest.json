@@ -1,0 +1,29 @@
+{
+  "backup_id": "backup-fixture-001",
+  "schema_version": "0003_import_protocol",
+  "sql_sha256": "6f992891e084cb880a40e6884ca29f4400696e7c3d28064eccad9a08a7bffd33",
+  "canonical_version": "v1",
+  "expected_counts": {
+    "app_settings": 0,
+    "audit_events": 0,
+    "backup_runs": 0,
+    "card_templates": 0,
+    "import_chunks": 0,
+    "import_jobs": 0,
+    "qsl_cards": 0,
+    "qsos": 1,
+    "stations": 1
+  },
+  "sample_hashes": [
+    {
+      "table": "stations",
+      "id": 1,
+      "expected_sha256": "151d99fde6f9cac172d76cdba0782982c78183a0e795c039902eceb4aad4bba1"
+    },
+    {
+      "table": "qsos",
+      "id": 1,
+      "expected_sha256": "d1f00cc1de20554a8990997b45dc0ac4581ade2dbd0e3ce1faad514057bd7206"
+    }
+  ]
+}

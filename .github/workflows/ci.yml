@@ -21,7 +21,13 @@ jobs:
           node-version: 24
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
+      - run: pnpm generate:openapi
+      - run: pnpm generate:api
+      - run: git diff --exit-code -- openapi/myQSL-v1.yaml apps/web/src/lib/api-types.ts
+      - run: pnpm verify:production --dry-run
       - run: pnpm db:migrate:local
       - run: pnpm run check
+      - run: pnpm check:bundle
+      - run: pnpm check:placeholders
       - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm test:e2e
+      - run: CI=1 pnpm test:e2e

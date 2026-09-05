@@ -578,10 +578,91 @@ export const myqslOpenApiSpec = {
           "429": { description: "Rate limit exceeded" }
         }
       }
+    },
+    [API_PATHS.backups]: {
+      get: {
+        summary: "List Backups",
+        operationId: "listBackups",
+        responses: {
+          "200": {
+            description: "List of backups and latest backup status",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    data: {
+                      type: "array",
+                      items: { $ref: "#/components/schemas/BackupRun" }
+                    },
+                    latest: {
+                      allOf: [{ $ref: "#/components/schemas/BackupRun" }],
+                      nullable: true
+                    }
+                  },
+                  required: ["data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backups/run": {
+      post: {
+        summary: "Trigger Backup Workflow",
+        operationId: "triggerBackup",
+        responses: {
+          "202": {
+            description: "Backup workflow initiated",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    data: {
+                      type: "object",
+                      properties: {
+                        instance_id: { type: "string" }
+                      },
+                      required: ["instance_id"]
+                    }
+                  },
+                  required: ["data"]
+                }
+              }
+            }
+          },
+          "409": {
+            description: "Backup workflow already running"
+          },
+          "503": {
+            description: "Backup workflow unavailable"
+          }
+        }
+      }
     }
   },
   components: {
     schemas: {
+      BackupRun: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          workflow_instance_id: { type: "string" },
+          export_bookmark: { type: "string", nullable: true },
+          object_key: { type: "string", nullable: true },
+          r2_etag: { type: "string", nullable: true },
+          content_sha256: { type: "string", nullable: true },
+          size_bytes: { type: "integer", nullable: true },
+          status: { type: "string", enum: ["running", "completed", "failed"] },
+          error_code: { type: "string", nullable: true },
+          started_at: { type: "integer" },
+          finished_at: { type: "integer", nullable: true },
+          verified_at: { type: "integer", nullable: true }
+        },
+        required: ["id", "workflow_instance_id", "status", "started_at"]
+      },
       QsoInput: {
         type: "object",
         properties: {

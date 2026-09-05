@@ -73,7 +73,9 @@ describe("Canonical API Contracts", () => {
       { path: "/api/v1/cards/nonexistent/void", method: "POST", auth: true },
       { path: "/api/v1/public/card-lookup", method: "POST", auth: false, body: { call: "VR2XYZ", qso_date: "20260904" } },
       { path: "/api/v1/public/cards/nonexistent", method: "GET", auth: false },
-      { path: "/api/v1/public/cards/nonexistent/image", method: "GET", auth: false }
+      { path: "/api/v1/public/cards/nonexistent/image", method: "GET", auth: false },
+      { path: "/api/v1/backups", method: "GET", auth: true },
+      { path: "/api/v1/backups/run", method: "POST", auth: true }
     ];
 
     for (const r of routesToTest) {
