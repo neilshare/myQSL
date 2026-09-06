@@ -30,6 +30,9 @@ jobs:
       - run: pnpm generate:api
       - run: git diff --exit-code -- openapi/myQSL-v1.yaml openapi/eQSR-v1.yaml apps/web/src/lib/api-types.ts
       - run: pnpm verify:production --strict
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       - run: pnpm db:migrate:prod
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
