@@ -30,10 +30,13 @@
     "PUBLIC_ORIGIN": "http://127.0.0.1:8787",
     "ACCESS_TEAM_DOMAIN": "https://myqsl.cloudflareaccess.com",
     "ACCESS_AUD": "local-development-audience",
-    "TEST_AUTH_ENABLED": "1"
+    "TEST_AUTH_ENABLED": "1",
+    "FEATURE_AGENT_INGEST": "1",
+    "FEATURE_PRINT": "1",
+    "FEATURE_EMAIL_DELIVERY": "1"
   },
   "triggers": {
-    "crons": ["0 20 * * *"]
+    "crons": ["* * * * *", "0 20 * * *"]
   },
   "observability": { "enabled": true },
   "workflows": [

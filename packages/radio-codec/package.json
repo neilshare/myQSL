@@ -1,0 +1,11 @@
+{
+  "name": "@myqsl/radio-codec",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "typecheck": "tsc --noEmit" },
+  "dependencies": {
+    "@myqsl/domain": "workspace:*",
+    "fast-xml-parser": "5.2.5"
+  }
+}

@@ -864,9 +864,54 @@ export const myqslOpenApiSpec = {
         }
       }
     }
+    ,
+    "/api/v1/agent/events": {
+      post: {
+        summary: "Ingest one radio event from an authorized agent",
+        operationId: "ingestAgentEvent",
+        security: [{ AgentBearer: [] }],
+        requestBody: { required: true, content: { "application/json": { schema: { $ref: "#/components/schemas/RadioEventV1" } } } },
+        responses: { "201": { description: "Event committed" }, "200": { description: "Replay or business result" }, "401": { $ref: "#/components/responses/ValidationError" }, "409": { $ref: "#/components/responses/ConflictError" } }
+      }
+    },
+    "/api/v1/print-batches": {
+      post: {
+        summary: "Freeze a print manifest",
+        operationId: "createPrintBatch",
+        parameters: [{ name: "Idempotency-Key", in: "header", required: true, schema: { type: "string" } }],
+        requestBody: { required: true, content: { "application/json": { schema: { type: "object" } } } },
+        responses: { "201": { description: "Manifest created" }, "200": { description: "Idempotent replay" }, "409": { $ref: "#/components/responses/ConflictError" } }
+      }
+    },
+    "/api/v1/delivery-batches": {
+      post: {
+        summary: "Prepare QRZ email recipients without sending",
+        operationId: "createDeliveryBatch",
+        parameters: [{ name: "Idempotency-Key", in: "header", required: true, schema: { type: "string" } }],
+        requestBody: { required: true, content: { "application/json": { schema: { type: "object" } } } },
+        responses: { "202": { description: "Preparation scheduled" }, "409": { $ref: "#/components/responses/ConflictError" } }
+      }
+    },
+    "/api/v1/webhooks/resend": {
+      post: {
+        summary: "Receive a signed Resend delivery event",
+        operationId: "receiveResendWebhook",
+        responses: { "200": { description: "Accepted" }, "401": { $ref: "#/components/responses/ValidationError" } }
+      }
+    }
   },
   components: {
+    securitySchemes: {
+      AgentBearer: { type: "http", scheme: "bearer", bearerFormat: "myqsl-agent" }
+    },
     schemas: {
+      RadioEventV1: {
+        type: "object",
+        required: ["protocol_version", "event_id", "profile_id", "source_kind", "event_kind", "source_instance", "source_record_id", "occurred_at", "received_at", "qso", "payload_sha256"],
+        properties: {
+          protocol_version: { type: "integer", enum: [1] }, event_id: { type: "string", format: "uuid" }, profile_id: { type: "string" }, source_kind: { type: "string", enum: ["wsjtx", "n1mm"] }, event_kind: { type: "string", enum: ["qso_logged", "external_replace", "external_delete"] }, source_instance: { type: "string" }, source_record_id: { type: "string" }, occurred_at: { type: "string", format: "date-time" }, received_at: { type: "string", format: "date-time" }, qso: { type: "object", nullable: true }, extras: { type: "object" }, payload_sha256: { type: "string", pattern: "^[a-f0-9]{64}$" }
+        }
+      },
       BackupRun: {
         type: "object",
         properties: {

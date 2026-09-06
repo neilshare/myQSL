@@ -13,8 +13,15 @@ import { registerPublicRoutes } from "./modules/public/routes";
 import { D1BackupWorkflow } from "./modules/backup/workflow";
 import { registerBackupRoutes } from "./modules/backup/routes";
 import { securityHeaders } from "./platform/security-headers";
+import type { RequestVariables } from "./platform/request-context";
+import { registerIntegrationRoutes } from "./modules/integrations/routes";
+import { registerIngestRoutes } from "./modules/ingest/routes";
+import { registerPrintingRoutes } from "./modules/printing/routes";
+import { registerDeliveryRoutes } from "./modules/deliveries/routes";
+import { registerCardBatchRoutes } from "./modules/cards/batch-routes";
+import { DeliveryDispatcher } from "./modules/deliveries/dispatcher";
 
-const app = new Hono<{ Bindings: Env; Variables: { requestId: string; actor: string } }>();
+const app = new Hono<{ Bindings: Env; Variables: RequestVariables }>();
 
 app.use("*", requestContext);
 app.use("*", securityHeaders);
@@ -42,8 +49,39 @@ app.use("/api/v1/*", async (c, next) => {
   if (c.req.path.startsWith("/api/v1/public/")) {
     return next();
   }
+  if (c.req.path.startsWith("/api/v1/agent/")) {
+    return next();
+  }
+  if (c.req.path.startsWith("/api/v1/webhooks/")) {
+    return next();
+  }
   return requireOwner(c, next);
 });
+app.use("/api/v1/agent/*", async (c, next) => {
+  if (c.env.FEATURE_AGENT_INGEST === "0") return problem(404, "https://myqsl.app/problems/feature-disabled", "Feature disabled", "Agent ingest is disabled", c.req.path);
+  return next();
+});
+registerIngestRoutes(app);
+app.use("/api/v1/integrations/agents", requireSameOrigin);
+app.use("/api/v1/integrations/agents", requireOwner);
+app.use("/api/v1/integrations/agents/*", requireSameOrigin);
+app.use("/api/v1/integrations/agents/*", requireOwner);
+registerIntegrationRoutes(app);
+app.use("/api/v1/print-batches", requireSameOrigin);
+app.use("/api/v1/print-batches/*", requireSameOrigin);
+app.use("/api/v1/print-batches*", async (c, next) => {
+  if (c.env.FEATURE_PRINT === "0") return problem(404, "https://myqsl.app/problems/feature-disabled", "Feature disabled", "Printing is disabled", c.req.path);
+  return next();
+});
+registerPrintingRoutes(app);
+app.use("/api/v1/delivery-batches", requireSameOrigin);
+app.use("/api/v1/delivery-batches/*", requireSameOrigin);
+app.use("/api/v1/delivery-settings/*", requireSameOrigin);
+app.use("/api/v1/delivery-batches*", async (c, next) => {
+  if (c.env.FEATURE_EMAIL_DELIVERY === "0") return problem(404, "https://myqsl.app/problems/feature-disabled", "Feature disabled", "Email delivery is disabled", c.req.path);
+  return next();
+});
+registerDeliveryRoutes(app);
 registerStationRoutes(app);
 registerQsoRoutes(app);
 registerImportRoutes(app);
@@ -51,6 +89,9 @@ registerTemplateRoutes(app);
 app.use("/api/v1/cards", requireSameOrigin);
 app.use("/api/v1/cards", requireOwner);
 registerCardRoutes(app);
+app.use("/api/v1/card-batches", requireSameOrigin);
+app.use("/api/v1/card-batches/*", requireSameOrigin);
+registerCardBatchRoutes(app);
 app.use("/api/v1/backups", requireSameOrigin);
 app.use("/api/v1/backups", requireOwner);
 registerBackupRoutes(app);
@@ -78,6 +119,10 @@ app.all("*", async (c) => {
 export default {
   fetch: app.fetch,
   async scheduled(controller, env, ctx) {
+    if (controller.cron !== "0 20 * * *") {
+      ctx.waitUntil(new DeliveryDispatcher(env).dispatchDue(50));
+      return;
+    }
     if (!env.D1_BACKUP_WORKFLOW) return;
     ctx.waitUntil(
       (async () => {
@@ -95,4 +140,3 @@ export default {
 } satisfies ExportedHandler<Env>;
 
 export { D1BackupWorkflow };
-

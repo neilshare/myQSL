@@ -152,4 +152,71 @@ export const appSettings = sqliteTable("app_settings", {
   updatedAt: integer("updated_at").notNull()
 });
 
-export const schema = { stations, qsos, importJobs, importChunks, cardTemplates, qslCards, auditEvents, backupRuns, appSettings };
+export const agentDevices = sqliteTable("agent_devices", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  tokenSha256: text("token_sha256").notNull().unique(),
+  tokenExpiresAt: integer("token_expires_at").notNull(),
+  revokedAt: integer("revoked_at"),
+  createdAt: integer("created_at").notNull(),
+  lastSeenAt: integer("last_seen_at")
+});
+
+export const agentProfiles = sqliteTable("agent_profiles", {
+  id: text("id").primaryKey(),
+  deviceId: text("device_id").notNull().references(() => agentDevices.id),
+  stationId: integer("station_id").notNull().references(() => stations.id),
+  sourceKind: text("source_kind").notNull(),
+  sourceInstance: text("source_instance").notNull(),
+  expectedStationCallsign: text("expected_station_callsign").notNull(),
+  enabled: integer("enabled").notNull().default(1),
+  version: integer("version").notNull().default(1),
+  createdAt: integer("created_at").notNull(),
+  updatedAt: integer("updated_at").notNull()
+});
+
+export const ingestEvents = sqliteTable("ingest_events", {
+  id: text("id").primaryKey(),
+  deviceId: text("device_id").notNull().references(() => agentDevices.id),
+  eventId: text("event_id").notNull(),
+  payloadSha256: text("payload_sha256").notNull(),
+  profileId: text("profile_id").notNull().references(() => agentProfiles.id),
+  sourceKind: text("source_kind").notNull(),
+  sourceInstance: text("source_instance").notNull(),
+  sourceRecordId: text("source_record_id").notNull(),
+  eventKind: text("event_kind").notNull(),
+  payloadJson: text("payload_json").notNull(),
+  outcome: text("outcome").notNull(),
+  qsoId: integer("qso_id").references(() => qsos.id),
+  duplicateOf: integer("duplicate_of").references(() => qsos.id),
+  issuesJson: text("issues_json").notNull().default("[]"),
+  createdAt: integer("created_at").notNull(),
+  payloadExpiresAt: integer("payload_expires_at").notNull()
+});
+
+export const qsoSourceLinks = sqliteTable("qso_source_links", {
+  sourceKind: text("source_kind").notNull(),
+  sourceInstance: text("source_instance").notNull(),
+  sourceRecordId: text("source_record_id").notNull(),
+  qsoId: integer("qso_id").references(() => qsos.id),
+  payloadSha256: text("payload_sha256").notNull(),
+  lastEventId: text("last_event_id").notNull(),
+  tombstonedAt: integer("tombstoned_at"),
+  createdAt: integer("created_at").notNull()
+});
+
+export const printBatches = sqliteTable("print_batches", {
+  id: text("id").primaryKey(), idempotencyKey: text("idempotency_key").notNull().unique(), requestHash: text("request_hash").notNull(), kind: text("kind").notNull(), profileJson: text("profile_json").notNull(), status: text("status").notNull(), rendererVersion: text("renderer_version").notNull(), fontManifestVersion: text("font_manifest_version").notNull(), manifestHash: text("manifest_hash").notNull(), resultHash: text("result_hash"), resultSize: integer("result_size"), pageCount: integer("page_count"), createdAt: integer("created_at").notNull(), expiresAt: integer("expires_at").notNull()
+});
+
+export const printBatchItems = sqliteTable("print_batch_items", {
+  batchId: text("batch_id").notNull().references(() => printBatches.id), position: integer("position").notNull(), qsoId: integer("qso_id").references(() => qsos.id), cardId: text("card_id").references(() => qslCards.id), snapshotJson: text("snapshot_json").notNull(), snapshotHash: text("snapshot_hash").notNull(), backgroundAssetId: text("background_asset_id"), backgroundSha256: text("background_sha256"), publicUrl: text("public_url"), qrOmitted: integer("qr_omitted").notNull().default(0)
+});
+
+export const cardBatches = sqliteTable("card_batches", { id: text("id").primaryKey(), requestKey: text("request_key").notNull().unique(), requestHash: text("request_hash").notNull(), createdAt: integer("created_at").notNull() });
+export const cardBatchItems = sqliteTable("card_batch_items", { batchId: text("batch_id").notNull().references(() => cardBatches.id), position: integer("position").notNull(), qsoId: integer("qso_id").notNull().references(() => qsos.id), templateVersion: integer("template_version").notNull(), cardId: text("card_id").references(() => qslCards.id) });
+
+export const deliveryBatches = sqliteTable("delivery_batches", { id: text("id").primaryKey(), requestKey: text("request_key").notNull().unique(), requestHash: text("request_hash").notNull(), status: text("status").notNull(), version: integer("version").notNull().default(1), requestItemsJson: text("request_items_json").notNull(), language: text("language").notNull(), attachmentMode: text("attachment_mode").notNull(), createdAt: integer("created_at").notNull(), readyAt: integer("ready_at"), expiresAt: integer("expires_at"), errorCode: text("error_code") });
+export const deliveryBatchItems = sqliteTable("delivery_batch_items", { batchId: text("batch_id").notNull().references(() => deliveryBatches.id), position: integer("position").notNull(), cardId: text("card_id").notNull().references(() => qslCards.id), preparationStatus: text("preparation_status").notNull(), directoryContactId: text("directory_contact_id"), deliveryId: text("delivery_id"), existingDeliveryId: text("existing_delivery_id"), aliasConfirmedAt: integer("alias_confirmed_at"), confirmedResolvedCall: text("confirmed_resolved_call"), errorCode: text("error_code"), updatedAt: integer("updated_at").notNull() });
+
+export const schema = { stations, qsos, importJobs, importChunks, cardTemplates, qslCards, auditEvents, backupRuns, appSettings, agentDevices, agentProfiles, ingestEvents, qsoSourceLinks, printBatches, printBatchItems, cardBatches, cardBatchItems, deliveryBatches, deliveryBatchItems };

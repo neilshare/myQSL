@@ -9,6 +9,7 @@
   "dependencies": {
     "@myqsl/domain": "workspace:*",
     "drizzle-orm": "0.45.2",
+    "fast-xml-parser": "5.2.5",
     "hono": "4.13.7",
     "jose": "6.1.0",
     "nanoid": "5.1.16",

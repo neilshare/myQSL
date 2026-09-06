@@ -16,6 +16,9 @@ const NAV_CONFIG: NavItemConfig[] = [
   { path: "/admin/import", key: "nav.import", icon: "📥" },
   { path: "/admin/settings/stations", key: "nav.stations", icon: "⚙️" },
   { path: "/admin/trash", key: "nav.trash", icon: "🗑️" },
+  { path: "/admin/print", key: "nav.print", icon: "🖨️" },
+  { path: "/admin/deliveries", key: "nav.deliveries", icon: "✉️" },
+  { path: "/admin/settings/integrations", key: "nav.integrations", icon: "🔌" },
   { path: "/lookup", key: "nav.lookup", icon: "🔍" },
 ];
 

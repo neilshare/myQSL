@@ -10,6 +10,9 @@ import { CardListPage } from "../features/cards/CardListPage";
 import { CardCreatePage } from "../features/cards/CardCreatePage";
 import { CardLookupPage } from "../features/public/CardLookupPage";
 import { PublicCardPage } from "../features/public/PublicCardPage";
+import { PrintPage } from "../features/printing/PrintPage";
+import { DeliveryPage } from "../features/deliveries/DeliveryPage";
+import { AgentSettingsPage } from "../features/integrations/AgentSettingsPage";
 
 export const router = createBrowserRouter([
   {
@@ -25,6 +28,9 @@ export const router = createBrowserRouter([
       { path: "/templates/edit", element: <TemplateEditorPage /> },
       { path: "/admin/cards", element: <CardListPage /> },
       { path: "/admin/cards/new", element: <CardCreatePage /> },
+      { path: "/admin/print", element: <PrintPage /> },
+      { path: "/admin/deliveries", element: <DeliveryPage /> },
+      { path: "/admin/settings/integrations", element: <AgentSettingsPage /> },
       { path: "/cards/create", element: <CardCreatePage /> },
       { path: "/lookup", element: <CardLookupPage /> },
       { path: "/c/:publicId", element: <PublicCardPage /> }

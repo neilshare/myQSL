@@ -2,7 +2,8 @@ import type { MiddlewareHandler } from "hono";
 import { nanoid } from "nanoid";
 import type { Env } from "../env";
 
-export type RequestVariables = { requestId: string; actor: string };
+export type AgentContext = { deviceId: string; profileIds: string[]; actor: string };
+export type RequestVariables = { requestId: string; actor: string; agent: AgentContext };
 
 const REQUEST_ID_REGEX = /^[a-zA-Z0-9_-]{8,64}$/;
 

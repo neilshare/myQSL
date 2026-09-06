@@ -30,6 +30,12 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
 }
 
 export const api = {
+  integrations: {
+    listAgents: () => apiFetch<Array<Record<string, unknown>>>("/api/v1/integrations/agents"),
+    createAgent: (input: Record<string, unknown>) => apiFetch<Record<string, unknown>>("/api/v1/integrations/agents", { method: "POST", body: JSON.stringify(input) }),
+    revokeAgent: (id: string) => apiFetch<Record<string, unknown>>(`/api/v1/integrations/agents/${encodeURIComponent(id)}/revoke`, { method: "POST" }),
+    rotateAgent: (id: string) => apiFetch<Record<string, unknown>>(`/api/v1/integrations/agents/${encodeURIComponent(id)}/rotate-token`, { method: "POST" })
+  },
   qsos: {
     list: (query = "") => apiFetch<QsoRecord[]>(`/api/v1/qsos${query}`),
     patch: (id: number, patch: Partial<QsoInput>, etag: string) => apiFetch<QsoRecord>(`/api/v1/qsos/${id}`, { method: "PATCH", headers: { "If-Match": etag }, body: JSON.stringify(patch) }),
@@ -80,7 +86,19 @@ export const api = {
       return { data: (json && typeof json === "object" && "data" in json ? json.data : json) as CardRow };
     },
     publish: (id: string) => apiFetch<CardRow>(`/api/v1/cards/${id}/publish`, { method: "POST" }),
-    void: (id: string) => apiFetch<CardRow>(`/api/v1/cards/${id}/void`, { method: "POST" })
+    void: (id: string) => apiFetch<CardRow>(`/api/v1/cards/${id}/void`, { method: "POST" }),
+    batch: (input: { qso_ids: number[]; qso_versions?: Record<string, number>; template_id: number; template_version?: number }, key: string) => apiFetch<Record<string, unknown>>("/api/v1/card-batches", { method: "POST", headers: { "Idempotency-Key": key }, body: JSON.stringify(input) })
+  },
+  printing: {
+    create: (input: Record<string, unknown>, key: string) => apiFetch<Record<string, unknown>>("/api/v1/print-batches", { method: "POST", headers: { "Idempotency-Key": key }, body: JSON.stringify(input) }),
+    get: (id: string) => apiFetch<Record<string, unknown>>(`/api/v1/print-batches/${encodeURIComponent(id)}`),
+    complete: (id: string, input: Record<string, unknown>) => apiFetch<Record<string, unknown>>(`/api/v1/print-batches/${encodeURIComponent(id)}/complete`, { method: "POST", body: JSON.stringify(input) }),
+    cancel: (id: string) => apiFetch<Record<string, unknown>>(`/api/v1/print-batches/${encodeURIComponent(id)}/cancel`, { method: "POST" })
+  },
+  deliveries: {
+    create: (input: Record<string, unknown>, key: string) => apiFetch<Record<string, unknown>>("/api/v1/delivery-batches", { method: "POST", headers: { "Idempotency-Key": key }, body: JSON.stringify(input) }),
+    get: (id: string) => apiFetch<Record<string, unknown>>(`/api/v1/delivery-batches/${encodeURIComponent(id)}`),
+    send: (id: string, input: Record<string, unknown>) => apiFetch<Record<string, unknown>>(`/api/v1/delivery-batches/${encodeURIComponent(id)}/send`, { method: "POST", body: JSON.stringify(input) })
   },
   public: {
     lookup: (input: { call: string; qso_date: string }) => apiFetch<PublicCardSummary[]>("/api/v1/public/card-lookup", { method: "POST", body: JSON.stringify(input) })
@@ -92,4 +110,3 @@ export const api = {
     completeJob: (id: string) => apiFetch<{ id: string; status: string }>(`/api/v1/imports/${id}/complete`, { method: "POST" }).then((result) => ((result.data as any)?.data ?? result.data))
   }
 };
-

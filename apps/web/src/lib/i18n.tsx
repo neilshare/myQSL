@@ -16,7 +16,10 @@ export const dictionaries = {
       import: "ADIF 导入",
       stations: "台站设置",
       trash: "回收站",
-      lookup: "索卡查验"
+      lookup: "索卡查验",
+      print: "矢量打印",
+      deliveries: "QRZ 发卡",
+      integrations: "设备集成"
     },
     theme: {
       title: "主题色调",
@@ -182,7 +185,10 @@ export const dictionaries = {
       import: "ADIF Import",
       stations: "Stations",
       trash: "Trash",
-      lookup: "Card Lookup"
+      lookup: "Card Lookup",
+      print: "Vector Print",
+      deliveries: "QRZ Delivery",
+      integrations: "Integrations"
     },
     theme: {
       title: "Theme Tone",

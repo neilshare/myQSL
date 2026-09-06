@@ -1,0 +1,9 @@
+{
+  "name": "@myqsl/card-pdf",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "typecheck": "tsc --noEmit", "test": "vitest run --root ../../ --config vitest.config.ts --project packages packages/card-pdf/test/**/*.test.ts" },
+  "dependencies": { "@myqsl/domain": "workspace:*", "pdf-lib": "1.17.1", "qrcode": "1.5.4" },
+  "devDependencies": { "@types/qrcode": "1.5.5", "typescript": "5.9.2", "vitest": "4.1.0" }
+}

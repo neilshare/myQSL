@@ -36,10 +36,13 @@
     "APP_ENV": "production",
     "PUBLIC_ORIGIN": "https://myqsl.203031.xyz",
     "ACCESS_TEAM_DOMAIN": "https://delin.cloudflareaccess.com",
-    "ACCESS_AUD": "e3984f251d907ffba60f1d3c680cd21f8c9bebc0ccfe124f522a059b5bb2c197"
+    "ACCESS_AUD": "e3984f251d907ffba60f1d3c680cd21f8c9bebc0ccfe124f522a059b5bb2c197",
+    "FEATURE_AGENT_INGEST": "0",
+    "FEATURE_PRINT": "1",
+    "FEATURE_EMAIL_DELIVERY": "0"
   },
   "triggers": {
-    "crons": ["0 20 * * *"]
+    "crons": ["* * * * *", "0 20 * * *"]
   },
   "observability": { "enabled": true },
   "workflows": [

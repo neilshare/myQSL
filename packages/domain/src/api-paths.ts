@@ -4,7 +4,12 @@ export const API_PATHS = {
   cards: "/api/v1/cards",
   publicLookup: "/api/v1/public/card-lookup",
   backups: "/api/v1/backups",
-  imports: "/api/v1/imports"
+  imports: "/api/v1/imports",
+  agents: "/api/v1/integrations/agents",
+  agentEvents: "/api/v1/agent/events",
+  printBatches: "/api/v1/print-batches",
+  cardBatches: "/api/v1/card-batches",
+  deliveryBatches: "/api/v1/delivery-batches"
 } as const;
 
 export const publicCardPath = (id: string) => `/c/${encodeURIComponent(id)}`;

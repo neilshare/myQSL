@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "packageManager": "pnpm@10.15.0",
-  "engines": { "node": ">=24 <25" },
+  "engines": {
+    "node": ">=24 <25"
+  },
   "scripts": {
     "build": "pnpm --filter @myqsl/web build",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
@@ -13,12 +15,13 @@
     "r2:lifecycle": "tsx scripts/configure-r2-lifecycle.mts",
     "lint": "eslint . && depcruise apps packages --config dependency-cruiser.cjs",
     "typecheck": "pnpm -r typecheck",
-    "test": "vitest run --config vitest.config.ts --project packages --project scripts --passWithNoTests && vitest run --config apps/web/vitest.config.ts --passWithNoTests && vitest run --config apps/worker/vitest.config.ts --passWithNoTests",
+    "test": "vitest run --config vitest.config.ts --project packages --project scripts --passWithNoTests && vitest run --config apps/web/vitest.config.ts --passWithNoTests && vitest run --config apps/worker/vitest.config.ts --passWithNoTests && pnpm --filter @myqsl/agent test",
     "test:e2e": "playwright test",
     "check:bundle": "tsx scripts/check-bundle.mts",
     "check:placeholders": "tsx scripts/check-placeholders.mts",
     "verify:production": "tsx scripts/verify-production-config.mts",
     "verify:backup": "tsx scripts/verify-backup.mts",
+    "verify:pdf": "tsx scripts/verify-pdf.mts",
     "dev": "pnpm build && wrangler d1 migrations apply DB --local --config wrangler.test.jsonc && wrangler dev --config wrangler.test.jsonc",
     "db:migrate:local": "wrangler d1 migrations apply DB --local --config wrangler.test.jsonc",
     "db:migrate:prod": "wrangler d1 migrations apply DB --remote",
@@ -33,6 +36,7 @@
     "dependency-cruiser": "17.1.0",
     "eslint": "9.35.0",
     "globals": "17.7.0",
+    "pdf-lib": "1.17.1",
     "tsx": "4.20.5",
     "typescript": "5.9.2",
     "typescript-eslint": "8.42.0",
