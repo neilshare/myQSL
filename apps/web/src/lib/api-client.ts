@@ -34,7 +34,9 @@ export const api = {
     listAgents: () => apiFetch<Array<Record<string, unknown>>>("/api/v1/integrations/agents"),
     createAgent: (input: Record<string, unknown>) => apiFetch<Record<string, unknown>>("/api/v1/integrations/agents", { method: "POST", body: JSON.stringify(input) }),
     revokeAgent: (id: string) => apiFetch<Record<string, unknown>>(`/api/v1/integrations/agents/${encodeURIComponent(id)}/revoke`, { method: "POST" }),
-    rotateAgent: (id: string) => apiFetch<Record<string, unknown>>(`/api/v1/integrations/agents/${encodeURIComponent(id)}/rotate-token`, { method: "POST" })
+    rotateAgent: (id: string) => apiFetch<Record<string, unknown>>(`/api/v1/integrations/agents/${encodeURIComponent(id)}/rotate-token`, { method: "POST" }),
+    listAgentEvents: (query = "?status=review_required") => apiFetch<Array<Record<string, unknown>>>(`/api/v1/integrations/agent-events${query}`),
+    dismissAgentEvent: (id: string, reason: string) => apiFetch<Record<string, unknown>>(`/api/v1/integrations/agent-events/${encodeURIComponent(id)}/dismiss`, { method: "POST", body: JSON.stringify({ reason }) })
   },
   qsos: {
     list: (query = "") => apiFetch<QsoRecord[]>(`/api/v1/qsos${query}`),

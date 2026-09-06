@@ -7,6 +7,7 @@ export const API_PATHS = {
   imports: "/api/v1/imports",
   agents: "/api/v1/integrations/agents",
   agentEvents: "/api/v1/agent/events",
+  agentReviewEvents: "/api/v1/integrations/agent-events",
   printBatches: "/api/v1/print-batches",
   cardBatches: "/api/v1/card-batches",
   deliveryBatches: "/api/v1/delivery-batches"

@@ -31,7 +31,10 @@ export class DeliveryService {
       const contact = await directory.lookup(String(qso.call ?? ""));
       if (contact.status !== "ready" || !contact.contact_id) { await this.env.DB.prepare("UPDATE delivery_batch_items SET preparation_status='blocked',error_code=?,updated_at=? WHERE batch_id=? AND position=?").bind(contact.error_code ?? `QRZ_${contact.status.toUpperCase()}`, this.now(), id, Number(item.position)).run(); continue; }
       const contactRow = await this.env.DB.prepare("SELECT * FROM directory_contacts WHERE id=?").bind(contact.contact_id).first<Record<string, unknown>>();
-      if (!contactRow) continue;
+      if (!contactRow || !contactRow.email_ciphertext || !contactRow.email_nonce || !contactRow.email_key_version || !contact.email_hmac || !this.env.PII_KEY_B64) {
+        await this.env.DB.prepare("UPDATE delivery_batch_items SET preparation_status='blocked',error_code='PII_NOT_CONFIGURED',updated_at=? WHERE batch_id=? AND position=?").bind(this.now(), id, Number(item.position)).run();
+        continue;
+      }
       const deliveryId = `delivery_${crypto.randomUUID()}`; const now = this.now(); const quotaDay = new Date(now).toISOString().slice(0, 10); const contentHash = String(card.content_sha256 ?? "");
       try {
         await this.env.DB.batch([

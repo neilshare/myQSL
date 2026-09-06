@@ -874,6 +874,27 @@ export const myqslOpenApiSpec = {
         responses: { "201": { description: "Event committed" }, "200": { description: "Replay or business result" }, "401": { $ref: "#/components/responses/ValidationError" }, "409": { $ref: "#/components/responses/ConflictError" } }
       }
     },
+    [API_PATHS.agentReviewEvents]: {
+      get: {
+        summary: "List agent events requiring owner review",
+        operationId: "listAgentReviewEvents",
+        parameters: [
+          { name: "status", in: "query", required: false, schema: { type: "string", enum: ["review_required", "rejected", "all"], default: "review_required" } },
+          { name: "before", in: "query", required: false, schema: { type: "integer" } },
+          { name: "limit", in: "query", required: false, schema: { type: "integer", minimum: 1, maximum: 100, default: 50 } }
+        ],
+        responses: { "200": { description: "Agent review events" }, "422": { $ref: "#/components/responses/ValidationError" } }
+      }
+    },
+    "/api/v1/integrations/agent-events/{id}/dismiss": {
+      post: {
+        summary: "Dismiss an agent review event",
+        operationId: "dismissAgentReviewEvent",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        requestBody: { required: true, content: { "application/json": { schema: { type: "object", required: ["reason"], properties: { reason: { type: "string", minLength: 3, maxLength: 500 } } } } } },
+        responses: { "200": { description: "Review event dismissed" }, "404": { $ref: "#/components/responses/NotFoundError" }, "409": { $ref: "#/components/responses/ConflictError" } }
+      }
+    },
     "/api/v1/print-batches": {
       post: {
         summary: "Freeze a print manifest",

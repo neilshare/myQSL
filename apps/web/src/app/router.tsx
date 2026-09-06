@@ -13,6 +13,7 @@ import { PublicCardPage } from "../features/public/PublicCardPage";
 import { PrintPage } from "../features/printing/PrintPage";
 import { DeliveryPage } from "../features/deliveries/DeliveryPage";
 import { AgentSettingsPage } from "../features/integrations/AgentSettingsPage";
+import { AgentReviewInbox } from "../features/integrations/AgentReviewInbox";
 
 export const router = createBrowserRouter([
   {
@@ -31,6 +32,7 @@ export const router = createBrowserRouter([
       { path: "/admin/print", element: <PrintPage /> },
       { path: "/admin/deliveries", element: <DeliveryPage /> },
       { path: "/admin/settings/integrations", element: <AgentSettingsPage /> },
+      { path: "/admin/settings/integrations/review", element: <AgentReviewInbox /> },
       { path: "/cards/create", element: <CardCreatePage /> },
       { path: "/lookup", element: <CardLookupPage /> },
       { path: "/c/:publicId", element: <PublicCardPage /> }

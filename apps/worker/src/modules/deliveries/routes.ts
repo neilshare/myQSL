@@ -20,5 +20,10 @@ export function registerDeliveryRoutes(app: Hono<{ Bindings: Env; Variables: Req
   });
   app.get("/api/v1/delivery-batches/:id", async (c) => { try { return c.json({ data: await service(c).get(c.req.param("id")) }); } catch (error) { return handle(error, c.req.path); } });
   app.post("/api/v1/delivery-batches/:id/send", async (c) => { const parsed = sendSchema.safeParse(await c.req.json().catch(() => null)); if (!parsed.success) return problem(422, "https://myqsl.app/problems/validation", "Validation failed", parsed.error.message, c.req.path); try { return c.json({ data: await service(c).send(c.req.param("id"), parsed.data.delivery_ids, parsed.data.preview_version) }, 202); } catch (error) { return handle(error, c.req.path); } });
-  app.post("/api/v1/webhooks/resend", async (c) => { const body = await c.req.text(); if (!c.env.RESEND_WEBHOOK_SECRET || !(await verifyWebhookSignature(body, c.req.raw.headers, c.env.RESEND_WEBHOOK_SECRET))) return problem(401, "https://myqsl.app/problems/auth-invalid", "Invalid signature", "Webhook signature is invalid", c.req.path); try { const result = await handleResendWebhook(c.env, body); return c.json({ data: { accepted: true, duplicate: result.duplicate } }); } catch { return problem(422, "https://myqsl.app/problems/validation", "Invalid webhook", "Webhook payload is invalid", c.req.path); } });
+  app.post("/api/v1/webhooks/resend", async (c) => {
+    const body = await c.req.text();
+    if (new TextEncoder().encode(body).byteLength > 256 * 1024) return problem(413, "https://myqsl.app/problems/payload-too-large", "Payload too large", "Webhook payload exceeds 256 KiB", c.req.path);
+    if (!c.env.RESEND_WEBHOOK_SECRET || !(await verifyWebhookSignature(body, c.req.raw.headers, c.env.RESEND_WEBHOOK_SECRET))) return problem(401, "https://myqsl.app/problems/auth-invalid", "Invalid signature", "Webhook signature is invalid", c.req.path);
+    try { const result = await handleResendWebhook(c.env, body); return c.json({ data: { accepted: true, duplicate: result.duplicate, applied: result.applied } }); } catch { return problem(422, "https://myqsl.app/problems/validation", "Invalid webhook", "Webhook payload is invalid", c.req.path); }
+  });
 }

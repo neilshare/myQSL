@@ -19,8 +19,21 @@ export class DeliveryDispatcher {
         const email = await decryptContact({ ciphertext: String(row.recipient_ciphertext), nonce: String(row.recipient_nonce), key_version: String(row.recipient_key_version) }, this.env.PII_KEY_B64);
         const qso = JSON.parse(String(row.qso_snapshot_json)) as { call?: string; station_callsign?: string; qso_date?: string; mode?: string };
         const envelope: EmailEnvelope = { delivery_id: String(row.id), to: email, from: this.env.RESEND_FROM, subject: `QSL card for ${qso.station_callsign ?? "my station"} ↔ ${qso.call ?? ""}`, html: `<p>Thank you for the QSO on ${escapeHtml(qso.qso_date ?? "")} (${escapeHtml(qso.mode ?? "")}).</p><p>This message was sent by myQSL.</p>` };
+        if (row.attachment_mode === "png") {
+          const assetKey = typeof row.image_r2_key === "string" ? row.image_r2_key : "";
+          if (!assetKey) throw new Error("CARD_ASSET_MISSING");
+          const object = await this.env.MEDIA.get(assetKey);
+          if (!object) throw new Error("CARD_ASSET_MISSING");
+          const content = new Uint8Array(await object.arrayBuffer());
+          if (content.byteLength > 5 * 1024 * 1024) throw new Error("ATTACHMENT_TOO_LARGE");
+          envelope.attachment = { filename: `qsl-${String(row.card_id)}.png`, content, content_type: "image/png" };
+        }
         const result = await provider.send(envelope, String(row.provider_key)); await this.env.DB.prepare("UPDATE card_deliveries SET status='submitted',provider_id=?,first_send_at=COALESCE(first_send_at,?),lease_token=NULL,lease_until=NULL,updated_at=? WHERE id=? AND lease_token=?").bind(result.provider_id, now, now, row.id, lease).run(); submitted += 1;
       } catch (error) {
+        if (error instanceof Error && (error.message === "CARD_ASSET_MISSING" || error.message === "ATTACHMENT_TOO_LARGE")) {
+          await this.env.DB.prepare("UPDATE card_deliveries SET status='cancelled',reason=?,lease_token=NULL,lease_until=NULL,updated_at=? WHERE id=? AND lease_token=?").bind(error.message, now, row.id, lease).run();
+          continue;
+        }
         const retryable = error instanceof Error && /retry|timeout|429|5\d\d/iu.test(error.message);
         if (retryable && Number(row.attempt_count) < 8) { await this.env.DB.prepare("UPDATE card_deliveries SET status='retry_wait',next_attempt_at=?,lease_token=NULL,lease_until=NULL,updated_at=? WHERE id=? AND lease_token=?").bind(now + Math.min(300_000, 2 ** Number(row.attempt_count) * 1000), now, row.id, lease).run(); retry += 1; }
         else { await this.env.DB.prepare("UPDATE card_deliveries SET status='unknown',lease_token=NULL,lease_until=NULL,updated_at=? WHERE id=? AND lease_token=?").bind(now, row.id, lease).run(); unknown += 1; }
