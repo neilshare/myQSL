@@ -10,6 +10,32 @@ function decodeWebhookSecret(secret: string): Uint8Array {
   }
 }
 
+/** Apply provider events that arrived before the delivery row was committed. */
+export async function repairWebhookOrphans(env: Env, now = Date.now(), limit = 100): Promise<{ repaired: number }> {
+  const events = await env.DB.prepare("SELECT provider_event_id,provider_id,type FROM delivery_webhook_events WHERE provider_id IS NOT NULL AND applied_at IS NULL ORDER BY received_at LIMIT ?").bind(limit).all<{ provider_event_id: string; provider_id: string; type: string }>();
+  let repaired = 0;
+  for (const event of events.results) {
+    const status = statusFor(event.type);
+    if (!status) continue;
+    const delivery = await env.DB.prepare("SELECT id,recipient_hmac FROM card_deliveries WHERE provider_id=?").bind(event.provider_id).first<{ id: string; recipient_hmac: string }>();
+    if (!delivery) continue;
+    const statements: D1PreparedStatement[] = [];
+    if (status === "bounced") {
+      const reason = event.type === "email.complained" ? "PROVIDER_COMPLAINT" : "PROVIDER_HARD_BOUNCE";
+      statements.push(
+        env.DB.prepare("UPDATE card_deliveries SET status=CASE WHEN status='delivered' THEN status ELSE 'bounced' END,reason=?,updated_at=? WHERE provider_id=?").bind(reason, now, event.provider_id),
+        env.DB.prepare("INSERT INTO email_suppressions(recipient_hmac,reason,source_event_id,created_at) VALUES(?,?,?,?) ON CONFLICT(recipient_hmac) DO UPDATE SET reason=excluded.reason,source_event_id=excluded.source_event_id,created_at=excluded.created_at,released_at=NULL").bind(delivery.recipient_hmac, reason, event.provider_event_id, now)
+      );
+    } else {
+      statements.push(env.DB.prepare("UPDATE card_deliveries SET status=CASE WHEN status IN ('delivered','bounced') THEN status ELSE ? END,updated_at=? WHERE provider_id=?").bind(status, now, event.provider_id));
+    }
+    statements.push(env.DB.prepare("UPDATE delivery_webhook_events SET applied_at=? WHERE provider_event_id=? AND applied_at IS NULL").bind(now, event.provider_event_id));
+    await env.DB.batch(statements);
+    repaired += 1;
+  }
+  return { repaired };
+}
+
 async function hmac(secret: string, value: string): Promise<string> {
   const secretBytes = decodeWebhookSecret(secret);
   const raw = new Uint8Array(secretBytes.byteLength);
@@ -55,9 +81,12 @@ export async function handleResendWebhook(env: Env, body: string, now = Date.now
   if (existing) return { duplicate: true, applied: false };
 
   const status = statusFor(type);
+  const matchingDelivery = status && providerId
+    ? await env.DB.prepare("SELECT 1 FROM card_deliveries WHERE provider_id=?").bind(providerId).first()
+    : null;
   const statements: D1PreparedStatement[] = [
     env.DB.prepare("INSERT INTO delivery_webhook_events(provider_event_id,provider_id,type,occurred_at,received_at,applied_at) VALUES(?,?,?,?,?,?)")
-      .bind(providerEventId, providerId, type, Number.isFinite(occurredAt) ? occurredAt : null, now, status && providerId ? now : null)
+      .bind(providerEventId, providerId, type, Number.isFinite(occurredAt) ? occurredAt : null, now, matchingDelivery ? now : null)
   ];
 
   if (status && providerId) {

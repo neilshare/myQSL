@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { handleResendWebhook } from "../../src/modules/deliveries/webhook";
+import { handleResendWebhook, repairWebhookOrphans } from "../../src/modules/deliveries/webhook";
 
 async function seedDelivery(status = "submitted", providerId = "provider-1", recipientHmac = "hmac-1") {
   await env.DB.prepare("INSERT INTO stations(id,callsign,is_default,created_at,updated_at) VALUES(?,?,?,?,?)").bind(1, "BA4RC", 1, 1, 1).run();
@@ -33,5 +33,14 @@ describe("Resend webhook reducer", () => {
     await env.DB.prepare("UPDATE card_deliveries SET status='delivered' WHERE id='delivery-1'").run();
     await handleResendWebhook(env, JSON.stringify({ id: "evt-bounce-2", type: "email.bounced", data: { email_id: "provider-2" } }), 3_000);
     expect((await env.DB.prepare("SELECT status FROM card_deliveries WHERE id='delivery-1'").first<{ status: string }>())?.status).toBe("delivered");
+  });
+
+  it("repairs a webhook received before the provider delivery row existed", async () => {
+    const body = JSON.stringify({ id: "evt-orphan-1", type: "email.delivered", data: { email_id: "provider-late" } });
+    await expect(handleResendWebhook(env, body, 2_000)).resolves.toEqual({ duplicate: false, applied: false });
+    await seedDelivery("submitted", "provider-late", "hmac-late");
+    await expect(repairWebhookOrphans(env, 3_000)).resolves.toEqual({ repaired: 1 });
+    expect((await env.DB.prepare("SELECT status FROM card_deliveries WHERE id='delivery-1'").first<{ status: string }>())?.status).toBe("delivered");
+    expect((await env.DB.prepare("SELECT applied_at FROM delivery_webhook_events WHERE provider_event_id='evt-orphan-1'").first<{ applied_at: number }>())?.applied_at).toBe(3_000);
   });
 });

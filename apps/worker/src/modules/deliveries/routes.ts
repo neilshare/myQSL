@@ -19,7 +19,17 @@ export function registerDeliveryRoutes(app: Hono<{ Bindings: Env; Variables: Req
     try { const result = await service(c).create(parsed.data, key); c.executionCtx.waitUntil(service(c).prepare(result.id)); return c.json({ data: { id: result.id, status: "preparing" }, replayed: result.replayed }, 202); } catch (error) { return handle(error, c.req.path); }
   });
   app.get("/api/v1/delivery-batches/:id", async (c) => { try { return c.json({ data: await service(c).get(c.req.param("id")) }); } catch (error) { return handle(error, c.req.path); } });
-  app.post("/api/v1/delivery-batches/:id/send", async (c) => { const parsed = sendSchema.safeParse(await c.req.json().catch(() => null)); if (!parsed.success) return problem(422, "https://myqsl.app/problems/validation", "Validation failed", parsed.error.message, c.req.path); try { return c.json({ data: await service(c).send(c.req.param("id"), parsed.data.delivery_ids, parsed.data.preview_version) }, 202); } catch (error) { return handle(error, c.req.path); } });
+  app.post("/api/v1/delivery-batches/:id/send", async (c) => {
+    const parsed = sendSchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return problem(422, "https://myqsl.app/problems/validation", "Validation failed", parsed.error.message, c.req.path);
+    try {
+      const result = await service(c).send(c.req.param("id"), parsed.data.delivery_ids, parsed.data.preview_version);
+      if (c.env.EMAIL_DISPATCH_WORKFLOW) {
+        c.executionCtx.waitUntil(Promise.all(result.delivery_ids.map((deliveryId) => c.env.EMAIL_DISPATCH_WORKFLOW?.create({ params: { delivery_id: deliveryId } }).catch((error) => console.error("Failed to create email dispatch workflow", error)))));
+      }
+      return c.json({ data: { queued: result.queued } }, 202);
+    } catch (error) { return handle(error, c.req.path); }
+  });
   app.post("/api/v1/webhooks/resend", async (c) => {
     const body = await c.req.text();
     if (new TextEncoder().encode(body).byteLength > 256 * 1024) return problem(413, "https://myqsl.app/problems/payload-too-large", "Payload too large", "Webhook payload exceeds 256 KiB", c.req.path);

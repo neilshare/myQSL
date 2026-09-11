@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="2704" viewBox="0 0 960 2704">
+<rect width="100%" height="100%" fill="#0b1020"/>
+<style>text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif} .title{font-size:22px;font-weight:700;fill:#f4f7ff}.meta{font-size:12px;fill:#9fb0d0}.node{fill:#18233d;stroke:#71d7ff;stroke-width:1.5}.label{font-size:14px;fill:#f7fbff}.edge{stroke:#b984ff;stroke-width:2;fill:none}.edgeLabel{font-size:11px;fill:#dbc8ff}</style>
+<text class="title" x="32" y="36">myQSL Cloudflare production operations</text>
+<rect x="24" y="62" width="912" height="780" rx="18" fill="#10182b" stroke="#253556"/>
+<text class="title" x="48" y="96">Credential boundaries</text>
+<text class="meta" x="48" y="116">flowchart · structural preview · static evidence</text>
+<rect class="node" x="64" y="140" width="380" height="48" rx="10"/>
+<text class="label" x="80" y="169">Operator
+Cloudflare + GitHub</text>
+<rect class="node" x="516" y="140" width="380" height="48" rx="10"/>
+<text class="label" x="532" y="169">Deploy API Token
+CLOUDFLARE_API_TOKEN</text>
+<rect class="node" x="64" y="216" width="380" height="48" rx="10"/>
+<text class="label" x="80" y="245">GitHub production secrets
+Token + Account ID</text>
+<rect class="node" x="516" y="216" width="380" height="48" rx="10"/>
+<text class="label" x="532" y="245">GitHub Actions
+preflight → migrate → deploy</text>
+<rect class="node" x="64" y="292" width="380" height="48" rx="10"/>
+<text class="label" x="80" y="321">Worker runtime secrets
+D1_REST_API_TOKEN
+RATE_LIMIT_SALT</text>
+<rect class="node" x="516" y="292" width="380" height="48" rx="10"/>
+<text class="label" x="532" y="321">Optional app secrets
+Access / QRZ / Resend / PII</text>
+<rect class="node" x="64" y="368" width="380" height="48" rx="10"/>
+<text class="label" x="80" y="397">Cloudflare Worker
+myqsl</text>
+<path class="edge" d="M254,188 L254,452 L706,452 L706,140"/>
+<text class="edgeLabel" x="48" y="466">create + store safely</text>
+<path class="edge" d="M706,188 L706,474 L254,474 L254,216"/>
+<text class="edgeLabel" x="48" y="488">GitHub Environment</text>
+<path class="edge" d="M254,264 L254,496 L706,496 L706,216"/>
+<text class="edgeLabel" x="48" y="510">CI/CD only</text>
+<path class="edge" d="M706,264 L706,518 L254,518 L254,368"/>
+<text class="edgeLabel" x="48" y="532">Wrangler deploy</text>
+<path class="edge" d="M254,188 L254,540 L254,540 L254,292"/>
+<text class="edgeLabel" x="48" y="554">wrangler secret put</text>
+<path class="edge" d="M254,340 L254,562 L254,562 L254,368"/>
+<text class="edgeLabel" x="48" y="576">encrypted runtime</text>
+<path class="edge" d="M254,188 L254,584 L706,584 L706,292"/>
+<text class="edgeLabel" x="48" y="598">only before enabling feature</text>
+<path class="edge" d="M706,340 L706,606 L254,606 L254,368"/>
+<text class="edgeLabel" x="48" y="620">runtime only</text>
+<rect x="24" y="862" width="912" height="932" rx="18" fill="#10182b" stroke="#253556"/>
+<text class="title" x="48" y="896">First production deployment</text>
+<text class="meta" x="48" y="916">flowchart · structural preview · static evidence</text>
+<rect class="node" x="64" y="940" width="380" height="48" rx="10"/>
+<text class="label" x="80" y="969">1 · Prepare
+Account ID + API token
+D1 / R2 / domain</text>
+<rect class="node" x="516" y="940" width="380" height="48" rx="10"/>
+<text class="label" x="532" y="969">2 · GitHub
+production secrets</text>
+<rect class="node" x="64" y="1016" width="380" height="48" rx="10"/>
+<text class="label" x="80" y="1045">3 · Worker
+D1 token + salt</text>
+<rect class="node" x="516" y="1016" width="380" height="48" rx="10"/>
+<text class="label" x="532" y="1045">4 · Runtime vars
+Account ID + D1 ID</text>
+<rect class="node" x="64" y="1092" width="380" height="48" rx="10"/>
+<text class="label" x="80" y="1121">5 · Strict preflight
+PRODUCTION_CONFIG_OK</text>
+<rect class="node" x="516" y="1092" width="380" height="48" rx="10"/>
+<text class="label" x="532" y="1121">6 · Remote D1
+migrations apply</text>
+<rect class="node" x="64" y="1168" width="380" height="48" rx="10"/>
+<text class="label" x="80" y="1197">7 · Build
+Web assets + Worker</text>
+<rect class="node" x="516" y="1168" width="380" height="48" rx="10"/>
+<text class="label" x="532" y="1197">8 · Wrangler deploy
+main → Cloudflare</text>
+<rect class="node" x="64" y="1244" width="380" height="48" rx="10"/>
+<text class="label" x="80" y="1273">9 · Smoke test
+healthz / Access / print</text>
+<path class="edge" d="M254,988 L254,1328 L706,1328 L706,940"/>
+<path class="edge" d="M706,988 L706,1350 L254,1350 L254,1016"/>
+<path class="edge" d="M254,1064 L254,1372 L706,1372 L706,1016"/>
+<path class="edge" d="M706,1064 L706,1394 L254,1394 L254,1092"/>
+<path class="edge" d="M254,1140 L254,1416 L706,1416 L706,1092"/>
+<text class="edgeLabel" x="48" y="1430">pass</text>
+<path class="edge" d="M706,1140 L706,1438 L254,1438 L254,1168"/>
+<path class="edge" d="M254,1216 L254,1460 L706,1460 L706,1168"/>
+<path class="edge" d="M706,1216 L706,1482 L254,1482 L254,1244"/>
+<rect x="24" y="1814" width="912" height="878" rx="18" fill="#10182b" stroke="#253556"/>
+<text class="title" x="48" y="1848">Enable features and recover safely</text>
+<text class="meta" x="48" y="1868">flowchart · structural preview · static evidence</text>
+<rect class="node" x="64" y="1892" width="380" height="48" rx="10"/>
+<text class="label" x="80" y="1921">Baseline live
+Agent OFF · Email OFF · Print ON</text>
+<rect class="node" x="516" y="1892" width="380" height="48" rx="10"/>
+<text class="label" x="532" y="1921">Owner Access + /readyz
+管理台登录与数据读写</text>
+<rect class="node" x="64" y="1968" width="380" height="48" rx="10"/>
+<text class="label" x="80" y="1997">Print acceptance
+PDF / QR / R2 / 实体尺寸</text>
+<rect class="node" x="516" y="1968" width="380" height="48" rx="10"/>
+<text class="label" x="532" y="1997">Agent preparation
+Access Service Auth + device token
+WS…</text>
+<rect class="node" x="64" y="2044" width="380" height="48" rx="10"/>
+<text class="label" x="80" y="2073">Enable Agent
+单设备灰度 + 断网补传</text>
+<rect class="node" x="516" y="2044" width="380" height="48" rx="10"/>
+<text class="label" x="532" y="2073">Email preparation
+QRZ + PII key + Resend + webhook</text>
+<rect class="node" x="64" y="2120" width="380" height="48" rx="10"/>
+<text class="label" x="80" y="2149">Enable Email
+只发测试邮箱 → 检查回执</text>
+<rect class="node" x="516" y="2120" width="380" height="48" rx="10"/>
+<text class="label" x="532" y="2149">Rollback
+关闭 feature flag
+保留数据与幂等墓碑</text>
+<path class="edge" d="M254,1940 L254,2204 L706,2204 L706,1892"/>
+<path class="edge" d="M706,1940 L706,2226 L254,2226 L254,1968"/>
+<path class="edge" d="M254,2016 L254,2248 L706,2248 L706,1968"/>
+<text class="edgeLabel" x="48" y="2262">通过后</text>
+<path class="edge" d="M706,2016 L706,2270 L254,2270 L254,2044"/>
+<text class="edgeLabel" x="48" y="2284">认证 + 真机通过</text>
+<path class="edge" d="M254,2092 L254,2292 L706,2292 L706,2044"/>
+<text class="edgeLabel" x="48" y="2306">稳定观察后</text>
+<path class="edge" d="M706,2092 L706,2314 L254,2314 L254,2120"/>
+<text class="edgeLabel" x="48" y="2328">回执 + 退信通过</text>
+<path class="edge" d="M254,2092 L254,2336 L706,2336 L706,2120"/>
+<text class="edgeLabel" x="48" y="2350">异常</text>
+<path class="edge" d="M254,2168 L254,2358 L706,2358 L706,2120"/>
+<text class="edgeLabel" x="48" y="2372">异常</text>
+<path class="edge" d="M706,2168 L706,2380 L254,2380 L254,1892"/>
+<text class="edgeLabel" x="48" y="2394">重新部署</text>
+</svg>

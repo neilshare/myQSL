@@ -19,7 +19,8 @@ import { registerIngestRoutes } from "./modules/ingest/routes";
 import { registerPrintingRoutes } from "./modules/printing/routes";
 import { registerDeliveryRoutes } from "./modules/deliveries/routes";
 import { registerCardBatchRoutes } from "./modules/cards/batch-routes";
-import { DeliveryDispatcher } from "./modules/deliveries/dispatcher";
+import { DeliveryScheduler } from "./modules/deliveries/scheduler";
+import { EmailDispatchWorkflow } from "./modules/deliveries/workflow";
 
 const app = new Hono<{ Bindings: Env; Variables: RequestVariables }>();
 
@@ -120,7 +121,7 @@ export default {
   fetch: app.fetch,
   async scheduled(controller, env, ctx) {
     if (controller.cron !== "0 20 * * *") {
-      ctx.waitUntil(new DeliveryDispatcher(env).dispatchDue(50));
+      ctx.waitUntil(new DeliveryScheduler(env).scheduleDue(50));
       return;
     }
     if (!env.D1_BACKUP_WORKFLOW) return;
@@ -140,3 +141,4 @@ export default {
 } satisfies ExportedHandler<Env>;
 
 export { D1BackupWorkflow };
+export { EmailDispatchWorkflow };

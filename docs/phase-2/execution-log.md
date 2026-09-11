@@ -23,10 +23,10 @@
 | T18 | partial | backend ordered draft batch and API client | Existing single-card UI still uses legacy per-card path |
 | T19 | done | directory/delivery tables, AES-GCM PII, HMAC and quota reservation | Key rotation/restore drill pending |
 | T20 | done | QRZ XML client, session single-flight/cache, stable error mapping | Real subscription/account test pending |
-| T21 | done | asynchronous delivery preparation route, 15-minute preview and explicit send selection | Workflow binding not yet added; execution context relies on cron/repair path |
+| T21 | done | asynchronous delivery preparation route, 15-minute preview and explicit send selection | Workflow scheduling is now wired by T23; real provider acceptance remains external |
 | T22 | done | Resend/Fake provider, R2 PNG attachment injection, attachment/HTML validation and fixed idempotency key | Real self-mail/SPF/DKIM/DMARC evidence pending |
-| T23 | partial | D1 claim/lease/throttle dispatcher and minute cron branch | Workflow retry/recovery binding and full provider fault-injection tests pending |
-| T24 | partial | raw Svix signature verification, event idempotency, delivered/sent/bounce reducer and suppression transition tests | Provider chaos/1,000-event evidence and orphan repair scheduler pending |
+| T23 | partial | `EmailDispatchWorkflow`, D1 claim/attempt records, stable provider key, lease recovery, 23-hour/8-attempt guards, and minute-cron compensation | Provider fault injection, real workflow retry/restart evidence, and cross-day quota recovery pending |
+| T24 | partial | raw Svix signature verification, event idempotency, delivered/sent/bounce reducer, suppression transitions, and orphan webhook repair scheduler | Provider chaos/1,000-event evidence pending |
 | T25 | partial | delivery page skeleton with explicit ready-item send | Full history/cancel/retry/resend UX and E2E pending |
 | T26 | partial | deploy workflow, runbooks and release evidence structure | Production restore, real mail and print/agent acceptance not performed |
 
@@ -36,7 +36,7 @@
 - `pnpm typecheck`：通过（Node 26.8.1；项目声明 Node 24）。
 - `pnpm exec vitest run --config vitest.config.ts --project packages --project scripts`：77 tests passed。
 - `pnpm exec vitest run --config apps/web/vitest.config.ts`：33 tests passed。
-- `pnpm exec vitest run --config apps/worker/vitest.config.ts`：61 tests passed；Wrangler 日志目录 EPERM 和预期 backup `EXPORT_UNAVAILABLE` 日志不影响退出码。
+- `pnpm exec vitest run --config apps/worker/vitest.config.ts`：68 tests passed；Wrangler 日志目录 EPERM 和预期 backup `EXPORT_UNAVAILABLE` 日志不影响退出码。
 - `pnpm --filter @myqsl/agent test`：4 tests passed。
 - `pnpm generate:openapi && pnpm generate:api`：生成成功；OpenAPI 变更已纳入工作树。
 - `pnpm exec tsx scripts/build-agent.mts`：生成 `dist/agent/myqsl-agent-v1.1.0.tar.gz` 与 `SHA256SUMS`。

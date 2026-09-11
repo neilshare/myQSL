@@ -1,0 +1,120 @@
+{
+  "version": 2,
+  "title": "myQSL Cloudflare production operations",
+  "description": "Production setup, deployment, verification, and feature enablement flows for myQSL.",
+  "diagrams": [
+    {
+      "id": "credential-boundaries",
+      "title": "Credential boundaries",
+      "description": "Deployment credentials, Worker runtime secrets, and application credentials have separate trust boundaries.",
+      "accessibility": "Cloudflare API token goes to GitHub Actions and local Wrangler; Worker runtime secrets stay in Cloudflare; Agent and email credentials are only enabled when their feature is enabled.",
+      "kind": "flowchart",
+      "data": {
+        "direction": "LR",
+        "nodes": [
+          {"id": "operator", "label": "Operator\nCloudflare + GitHub", "class": "actor"},
+          {"id": "deployToken", "label": "Deploy API Token\nCLOUDFLARE_API_TOKEN", "class": "deploy"},
+          {"id": "githubSecrets", "label": "GitHub production secrets\nToken + Account ID", "class": "deploy"},
+          {"id": "actions", "label": "GitHub Actions\npreflight → migrate → deploy", "class": "process"},
+          {"id": "workerSecrets", "label": "Worker runtime secrets\nD1_REST_API_TOKEN\nRATE_LIMIT_SALT", "class": "secret"},
+          {"id": "appSecrets", "label": "Optional app secrets\nAccess / QRZ / Resend / PII", "class": "optional"},
+          {"id": "worker", "label": "Cloudflare Worker\nmyqsl", "class": "platform"}
+        ],
+        "edges": [
+          {"from": "operator", "to": "deployToken", "label": "create + store safely"},
+          {"from": "deployToken", "to": "githubSecrets", "label": "GitHub Environment"},
+          {"from": "githubSecrets", "to": "actions", "label": "CI/CD only"},
+          {"from": "actions", "to": "worker", "label": "Wrangler deploy"},
+          {"from": "operator", "to": "workerSecrets", "label": "wrangler secret put"},
+          {"from": "workerSecrets", "to": "worker", "label": "encrypted runtime"},
+          {"from": "operator", "to": "appSecrets", "label": "only before enabling feature"},
+          {"from": "appSecrets", "to": "worker", "label": "runtime only"}
+        ]
+      },
+      "styles": [
+        {"name": "actor", "definition": "fill:#fff7ed,stroke:#f97316,stroke-width:2px,color:#7c2d12"},
+        {"name": "deploy", "definition": "fill:#eff6ff,stroke:#3b82f6,stroke-width:2px,color:#1e3a8a"},
+        {"name": "process", "definition": "fill:#ecfeff,stroke:#0891b2,stroke-width:2px,color:#164e63"},
+        {"name": "secret", "definition": "fill:#fef2f2,stroke:#dc2626,stroke-width:2px,color:#7f1d1d"},
+        {"name": "optional", "definition": "fill:#f5f3ff,stroke:#7c3aed,stroke-width:2px,color:#4c1d95"},
+        {"name": "platform", "definition": "fill:#f0fdf4,stroke:#16a34a,stroke-width:2px,color:#14532d"}
+      ]
+    },
+    {
+      "id": "production-deployment",
+      "title": "First production deployment",
+      "description": "A fail-closed deployment sequence for the current main branch workflow.",
+      "accessibility": "Prepare Cloudflare resources, configure GitHub and Worker secrets, run strict preflight, migrate D1, build, deploy, and perform smoke tests.",
+      "kind": "flowchart",
+      "data": {
+        "direction": "LR",
+        "nodes": [
+          {"id": "prepare", "label": "1 · Prepare\nAccount ID + API token\nD1 / R2 / domain", "class": "step"},
+          {"id": "github", "label": "2 · GitHub\nproduction secrets", "class": "step"},
+          {"id": "runtime", "label": "3 · Worker\nD1 token + salt", "class": "step"},
+          {"id": "vars", "label": "4 · Runtime vars\nAccount ID + D1 ID", "class": "step"},
+          {"id": "preflight", "label": "5 · Strict preflight\nPRODUCTION_CONFIG_OK", "class": "gate"},
+          {"id": "migration", "label": "6 · Remote D1\nmigrations apply", "class": "data"},
+          {"id": "build", "label": "7 · Build\nWeb assets + Worker", "class": "build"},
+          {"id": "deploy", "label": "8 · Wrangler deploy\nmain → Cloudflare", "class": "deploy"},
+          {"id": "smoke", "label": "9 · Smoke test\nhealthz / Access / print", "class": "verify"}
+        ],
+        "edges": [
+          {"from": "prepare", "to": "github"},
+          {"from": "github", "to": "runtime"},
+          {"from": "runtime", "to": "vars"},
+          {"from": "vars", "to": "preflight"},
+          {"from": "preflight", "to": "migration", "label": "pass"},
+          {"from": "migration", "to": "build"},
+          {"from": "build", "to": "deploy"},
+          {"from": "deploy", "to": "smoke"}
+        ]
+      },
+      "styles": [
+        {"name": "step", "definition": "fill:#eff6ff,stroke:#2563eb,stroke-width:2px,color:#1e3a8a"},
+        {"name": "gate", "definition": "fill:#fff7ed,stroke:#ea580c,stroke-width:3px,color:#7c2d12"},
+        {"name": "data", "definition": "fill:#ecfdf5,stroke:#059669,stroke-width:2px,color:#064e3b"},
+        {"name": "build", "definition": "fill:#f5f3ff,stroke:#7c3aed,stroke-width:2px,color:#4c1d95"},
+        {"name": "deploy", "definition": "fill:#fef2f2,stroke:#dc2626,stroke-width:2px,color:#7f1d1d"},
+        {"name": "verify", "definition": "fill:#f0fdf4,stroke:#16a34a,stroke-width:2px,color:#14532d"}
+      ]
+    },
+    {
+      "id": "enable-and-recover",
+      "title": "Enable features and recover safely",
+      "description": "Keep high-risk features disabled until their external credentials and acceptance tests are complete.",
+      "accessibility": "Start with print only, then validate Agent, then validate email, with a feature-flag rollback path at every stage.",
+      "kind": "flowchart",
+      "data": {
+        "direction": "TB",
+        "nodes": [
+          {"id": "baseline", "label": "Baseline live\nAgent OFF · Email OFF · Print ON", "class": "safe"},
+          {"id": "owner", "label": "Owner Access + /readyz\n管理台登录与数据读写", "class": "verify"},
+          {"id": "print", "label": "Print acceptance\nPDF / QR / R2 / 实体尺寸", "class": "verify"},
+          {"id": "agentPrep", "label": "Agent preparation\nAccess Service Auth + device token\nWSJT-X 2237 / N1MM 12060", "class": "controlled"},
+          {"id": "agentOn", "label": "Enable Agent\n单设备灰度 + 断网补传", "class": "controlled"},
+          {"id": "emailPrep", "label": "Email preparation\nQRZ + PII key + Resend + webhook", "class": "controlled"},
+          {"id": "emailOn", "label": "Enable Email\n只发测试邮箱 → 检查回执", "class": "controlled"},
+          {"id": "rollback", "label": "Rollback\n关闭 feature flag\n保留数据与幂等墓碑", "class": "rollback"}
+        ],
+        "edges": [
+          {"from": "baseline", "to": "owner"},
+          {"from": "owner", "to": "print"},
+          {"from": "print", "to": "agentPrep", "label": "通过后"},
+          {"from": "agentPrep", "to": "agentOn", "label": "认证 + 真机通过"},
+          {"from": "agentOn", "to": "emailPrep", "label": "稳定观察后"},
+          {"from": "emailPrep", "to": "emailOn", "label": "回执 + 退信通过"},
+          {"from": "agentOn", "to": "rollback", "label": "异常"},
+          {"from": "emailOn", "to": "rollback", "label": "异常"},
+          {"from": "rollback", "to": "baseline", "label": "重新部署"}
+        ]
+      },
+      "styles": [
+        {"name": "safe", "definition": "fill:#ecfdf5,stroke:#059669,stroke-width:3px,color:#064e3b"},
+        {"name": "verify", "definition": "fill:#eff6ff,stroke:#2563eb,stroke-width:2px,color:#1e3a8a"},
+        {"name": "controlled", "definition": "fill:#fff7ed,stroke:#ea580c,stroke-width:2px,color:#7c2d12"},
+        {"name": "rollback", "definition": "fill:#fef2f2,stroke:#dc2626,stroke-width:3px,color:#7f1d1d"}
+      ]
+    }
+  ]
+}

@@ -44,6 +44,11 @@
       "name": "myqsl-d1-backup-local",
       "binding": "D1_BACKUP_WORKFLOW",
       "class_name": "D1BackupWorkflow"
+    },
+    {
+      "name": "myqsl-email-dispatch-local",
+      "binding": "EMAIL_DISPATCH_WORKFLOW",
+      "class_name": "EmailDispatchWorkflow"
     }
   ]
 }

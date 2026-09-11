@@ -1,4 +1,5 @@
 export type BackupParams = { requested_at?: string };
+export type EmailDispatchParams = { delivery_id: string };
 
 export interface Env {
   DB: D1Database;
@@ -17,6 +18,7 @@ export interface Env {
   CLOUDFLARE_ACCOUNT_ID?: string;
   D1_DATABASE_ID?: string;
   D1_BACKUP_WORKFLOW: Workflow<BackupParams>;
+  EMAIL_DISPATCH_WORKFLOW?: Workflow<EmailDispatchParams>;
   RATE_LIMIT_SALT?: string;
   TEST_AUTH_ENABLED?: string;
   ALLOWED_ORIGINS?: string;

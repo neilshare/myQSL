@@ -199,7 +199,7 @@ pnpm exec tsx scripts/build-agent.mts
 - Worker：'myqsl'
 - D1：'myqsl-prod'，迁移目录 'infra/migrations'
 - R2：'myqsl-media'
-- Workflow：'myqsl-d1-backup'
+- Workflow：'myqsl-d1-backup'、'myqsl-email-dispatch'（邮件开关关闭时不发送）
 - Custom Domain：'myqsl.203031.xyz'
 
 首次部署前创建/确认 D1、R2、Access 应用和自定义域名；不要把真实 token、密码、PII key 或 QRZ/Resend 凭据提交 Git。
@@ -282,6 +282,7 @@ pnpm verify:production --strict
 - [Agent 运行手册](docs/runbooks/agent.md)
 - [打印运行手册](docs/runbooks/printing.md)
 - [邮件运行手册](docs/runbooks/email.md)
+- [Cloudflare 生产部署图文手册](docs/cloudflare-production-guide.html)
 - [第二阶段设计](docs/superpowers/specs/2026-09-05-myqsl-v1.1-v1.2-design.md)
 - [第二阶段实施计划](docs/superpowers/plans/2026-09-05-myqsl-v1.1-v1.2-implementation.md)
 

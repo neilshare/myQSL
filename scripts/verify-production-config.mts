@@ -14,6 +14,7 @@ export interface ProductionConfigTarget {
   hasMediaBinding?: boolean;
   hasRateLimiterBinding?: boolean;
   hasBackupWorkflowBinding?: boolean;
+  hasEmailWorkflowBinding?: boolean;
   existingSecrets?: string[];
   requiredSecrets?: string[];
 }
@@ -119,6 +120,9 @@ export function validateProductionConfig(target: ProductionConfigTarget): {
   }
   if (target.hasBackupWorkflowBinding === false) {
     issues.push({ field: "BINDING:D1_BACKUP_WORKFLOW", message: "Workflow binding 'D1_BACKUP_WORKFLOW' is missing in production configuration", severity: "error" });
+  }
+  if (target.hasEmailWorkflowBinding === false) {
+    issues.push({ field: "BINDING:EMAIL_DISPATCH_WORKFLOW", message: "Workflow binding 'EMAIL_DISPATCH_WORKFLOW' is missing in production configuration", severity: "error" });
   }
 
   // 9. Secrets check (Fail-Closed: undefined or missing required secrets fail)
@@ -230,6 +234,7 @@ async function runCli(): Promise<void> {
     hasMediaBinding: Boolean(wrangler.r2_buckets?.some((b: any) => b.binding === "MEDIA")),
     hasRateLimiterBinding: Boolean(wrangler.ratelimits?.some((r: any) => r.name === "PUBLIC_RATE_LIMITER")),
     hasBackupWorkflowBinding: Boolean(wrangler.workflows?.some((w: any) => w.binding === "D1_BACKUP_WORKFLOW")),
+    hasEmailWorkflowBinding: Boolean(wrangler.workflows?.some((w: any) => w.binding === "EMAIL_DISPATCH_WORKFLOW")),
     requiredSecrets: DEFAULT_REQUIRED_SECRETS
   };
 
@@ -260,6 +265,7 @@ async function runCli(): Promise<void> {
   console.log(`  - Media Binding: ${target.hasMediaBinding ? "present" : "MISSING"}`);
   console.log(`  - Rate Limiter Binding: ${target.hasRateLimiterBinding ? "present" : "MISSING"}`);
   console.log(`  - Workflow Binding: ${target.hasBackupWorkflowBinding ? "present" : "MISSING"}`);
+  console.log(`  - Email Workflow Binding: ${target.hasEmailWorkflowBinding ? "present" : "MISSING"}`);
 
   if (result.issues.length > 0) {
     console.log("\n⚠️ Issues Identified:");

@@ -124,6 +124,10 @@ describe("validateProductionConfig", () => {
     const missingWorkflow = validateProductionConfig({ ...validTarget, hasBackupWorkflowBinding: false });
     expect(missingWorkflow.valid).toBe(false);
     expect(missingWorkflow.issues.some((i) => i.field === "BINDING:D1_BACKUP_WORKFLOW")).toBe(true);
+
+    const missingEmailWorkflow = validateProductionConfig({ ...validTarget, hasEmailWorkflowBinding: false });
+    expect(missingEmailWorkflow.valid).toBe(false);
+    expect(missingEmailWorkflow.issues.some((i) => i.field === "BINDING:EMAIL_DISPATCH_WORKFLOW")).toBe(true);
   });
 
   it("rejects missing, invalid or placeholder ACCESS configuration", () => {

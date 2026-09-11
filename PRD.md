@@ -1,8 +1,8 @@
 # myQSL 产品需求与技术规格（PRD）
 
 > **文档版本**：v1.2.0-implementation
-> **更新日期**：2026-09-06
-> **代码基线**：feat/eqsr-phase2 / 18c4269
+> **更新日期**：2026-09-11
+> **代码基线**：main / f21fe45
 > **生产域名**：<https://myqsl.203031.xyz>
 > **代码仓库**：<https://github.com/neilshare/myQSL>
 
@@ -225,7 +225,7 @@ pnpm exec tsx scripts/build-agent.mts
 
 ### 7.1 一次性 Cloudflare 资源
 
-生产配置文件为 wrangler.jsonc，当前资源包括 Worker myqsl、D1 myqsl-prod、R2 myqsl-media、Workflow myqsl-d1-backup 和自定义域名 myqsl.203031.xyz。首次部署前创建资源、配置 Access 应用，并确认配置文件中的真实 database ID、域名和 Access audience。
+生产配置文件为 wrangler.jsonc，当前资源包括 Worker myqsl、D1 myqsl-prod、R2 myqsl-media、Workflow myqsl-d1-backup 与 myqsl-email-dispatch，以及自定义域名 myqsl.203031.xyz。首次部署前创建资源、配置 Access 应用，并确认配置文件中的真实 database ID、域名和 Access audience。
 
 ### 7.2 GitHub Actions
 

@@ -53,7 +53,7 @@ export class DeliveryService {
     return { ...batch, request_items: JSON.parse(String(batch.request_items_json)), items: items.results };
   }
 
-  async send(id: string, deliveryIds: string[], previewVersion: number): Promise<{ queued: number }> {
+  async send(id: string, deliveryIds: string[], previewVersion: number): Promise<{ queued: number; delivery_ids: string[] }> {
     const batch = await this.env.DB.prepare("SELECT * FROM delivery_batches WHERE id=?").bind(id).first<Record<string, unknown>>(); if (!batch) throw new DeliveryError("NOT_FOUND", "Delivery batch not found", 404);
     if (String(batch.status) !== "ready" || Number(batch.version) !== previewVersion || Number(batch.expires_at) <= this.now()) throw new DeliveryError("PREVIEW_EXPIRED", "Delivery preview expired or changed", 409);
     if (deliveryIds.length < 1 || deliveryIds.length > 50) throw new DeliveryError("DELIVERY_SELECTION_INVALID", "Select at least one prepared delivery");
@@ -64,6 +64,6 @@ export class DeliveryService {
     const confirmStmt = this.env.DB.prepare(`UPDATE card_deliveries SET send_confirmed=1,updated_at=? WHERE batch_id=? AND id IN (${deliveryIds.map(() => "?").join(",")}) AND send_confirmed=0`).bind(this.now(), id, ...deliveryIds);
     const [quotaResult, confirmResult] = await this.env.DB.batch([quotaStmt, confirmStmt]);
     if (!quotaResult.meta.changes || Number(confirmResult.meta.changes) !== deliveryIds.length) throw new DeliveryError("DAILY_QUOTA_EXCEEDED", "Daily email quota or delivery state changed", 429);
-    return { queued: deliveryIds.length };
+    return { queued: deliveryIds.length, delivery_ids: deliveryIds };
   }
 }
