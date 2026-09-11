@@ -7,6 +7,7 @@ export interface ProductionConfigTarget {
   publicOrigin?: string;
   accessTeamDomain?: string;
   accessAud?: string;
+  cloudflareAccountId?: string;
   testAuthEnabled?: string;
   d1DatabaseId?: string;
   backupDatabaseId?: string;
@@ -92,6 +93,11 @@ export function validateProductionConfig(target: ProductionConfigTarget): {
     issues.push({ field: "D1_DATABASE_ID", message: `D1 database_id contains placeholder UUID '${target.d1DatabaseId}'`, severity: "error" });
   } else if (!UUID_PATTERN.test(target.d1DatabaseId)) {
     issues.push({ field: "D1_DATABASE_ID", message: `D1 database_id is not a valid UUID: '${target.d1DatabaseId}'`, severity: "error" });
+  }
+
+  // 5b. Cloudflare account ID is needed by the D1 Export API used by backups.
+  if (!target.cloudflareAccountId || !/^[0-9a-f]{32}$/iu.test(target.cloudflareAccountId)) {
+    issues.push({ field: "CLOUDFLARE_ACCOUNT_ID", message: "CLOUDFLARE_ACCOUNT_ID must be a 32-character hexadecimal Cloudflare account ID", severity: "error" });
   }
 
   // 6. D1 backup database ID consistency check
@@ -227,6 +233,7 @@ async function runCli(): Promise<void> {
     publicOrigin: vars.PUBLIC_ORIGIN ?? process.env.PUBLIC_ORIGIN,
     accessTeamDomain: vars.ACCESS_TEAM_DOMAIN ?? process.env.ACCESS_TEAM_DOMAIN,
     accessAud: vars.ACCESS_AUD ?? process.env.ACCESS_AUD,
+    cloudflareAccountId: vars.CLOUDFLARE_ACCOUNT_ID,
     testAuthEnabled: vars.TEST_AUTH_ENABLED ?? process.env.TEST_AUTH_ENABLED,
     d1DatabaseId: d1Binding?.database_id,
     backupDatabaseId: process.env.D1_BACKUP_DATABASE_ID ?? process.env.D1_DATABASE_ID ?? d1Binding?.database_id,
@@ -260,6 +267,7 @@ async function runCli(): Promise<void> {
   console.log(`  - D1 Database ID: ${target.d1DatabaseId ?? "unset"}`);
   console.log(`  - Access Team Domain: ${target.accessTeamDomain ?? "unset"}`);
   console.log(`  - Access AUD: ${target.accessAud ?? "unset"}`);
+  console.log(`  - Cloudflare Account ID: ${target.cloudflareAccountId ?? "unset"}`);
   console.log(`  - Test Auth Disabled: ${target.testAuthEnabled !== "1"}`);
   console.log(`  - DB Binding: ${target.hasDbBinding ? "present" : "MISSING"}`);
   console.log(`  - Media Binding: ${target.hasMediaBinding ? "present" : "MISSING"}`);

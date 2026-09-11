@@ -9,6 +9,7 @@ describe("validateProductionConfig", () => {
     publicOrigin: "https://eqsr.ham.radio",
     accessTeamDomain: "https://myqsl.cloudflareaccess.com",
     accessAud: "myqsl-production-audience",
+    cloudflareAccountId: "0123456789abcdef0123456789abcdef",
     testAuthEnabled: "0",
     d1DatabaseId: "12345678-1234-1234-1234-123456789abc",
     existingSecrets: ["D1_REST_API_TOKEN", "RATE_LIMIT_SALT"]
@@ -54,6 +55,12 @@ describe("validateProductionConfig", () => {
     });
     expect(malformedD1.valid).toBe(false);
     expect(malformedD1.issues.some((i) => i.field === "D1_DATABASE_ID")).toBe(true);
+  });
+
+  it("rejects a missing Cloudflare account ID required by the backup workflow", () => {
+    const result = validateProductionConfig({ ...validTarget, cloudflareAccountId: undefined });
+    expect(result.valid).toBe(false);
+    expect(result.issues.some((i) => i.field === "CLOUDFLARE_ACCOUNT_ID")).toBe(true);
   });
 
   it("rejects mismatched D1 backup database ID", () => {

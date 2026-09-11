@@ -34,17 +34,18 @@
 
 - `pnpm lint`：通过。
 - `pnpm typecheck`：通过（Node 26.8.1；项目声明 Node 24）。
-- `pnpm exec vitest run --config vitest.config.ts --project packages --project scripts`：77 tests passed。
+- `pnpm exec vitest run --config vitest.config.ts --project packages --project scripts`：78 tests passed。
 - `pnpm exec vitest run --config apps/web/vitest.config.ts`：33 tests passed。
 - `pnpm exec vitest run --config apps/worker/vitest.config.ts`：68 tests passed；Wrangler 日志目录 EPERM 和预期 backup `EXPORT_UNAVAILABLE` 日志不影响退出码。
 - `pnpm --filter @myqsl/agent test`：4 tests passed。
 - `pnpm generate:openapi && pnpm generate:api`：生成成功；OpenAPI 变更已纳入工作树。
 - `pnpm exec tsx scripts/build-agent.mts`：生成 `dist/agent/myqsl-agent-v1.1.0.tar.gz` 与 `SHA256SUMS`。
-- 最新实现提交：`81c02ca`（第二阶段基础能力）、`6df0fae`（邮件回执状态机与异常收件箱）。
+- 历史实现提交：`81c02ca`（第二阶段基础能力）、`6df0fae`（邮件回执状态机与异常收件箱）；当前增量提交：`a1ef02d`、`cee0470`（邮件 Workflow、租约恢复、孤儿回执补偿、部署手册与备份运行时配置门禁）。
 
 ## 发布阻塞项
 
 1. 当前没有真实 WSJT-X/N1MM 数据包和四平台重启/断网证据。
 2. 生产 Cloudflare Access Service Auth、QRZ 订阅、Resend 发件域/Secrets、PII key 备份尚未配置或验证。
-3. PDF 仍使用标准 PDF 字体，中文受控字体、独立 QR 解码/印刷尺寸复核尚未完成。
-4. Email Workflow/租约恢复、完整 E2E 和生产回执演练尚未完成；邮件功能不得在当前状态直接宣称 v1.2 已发布。
+3. `wrangler.jsonc` 已固定 D1_DATABASE_ID，但真实 CLOUDFLARE_ACCOUNT_ID 仍需由部署者写入 vars；Worker 运行时 D1_REST_API_TOKEN、RATE_LIMIT_SALT 仍未验证。
+4. PDF 仍使用标准 PDF 字体，中文受控字体、独立 QR 解码/印刷尺寸复核尚未完成。
+5. Email Workflow/租约恢复、完整 E2E 和生产回执演练尚未完成；邮件功能不得在当前状态直接宣称 v1.2 已发布。
