@@ -6,9 +6,11 @@
 
 myQSL 是面向业余无线电台主的单所有者 QSO 与 QSL 系统。它覆盖 ADIF 日志、实时无线电入库、卡片模板、电子卡发布、矢量 PDF 印刷和 QRZ 邮箱发卡。
 
-> 当前仓库是 **v1.2.0-implementation**：v1.1/v1.2 代码和本地测试已完成，但真实电台、生产账号、印刷和恢复演练仍未完成。生产配置目前保持 'FEATURE_AGENT_INGEST=0'、'FEATURE_PRINT=1'、'FEATURE_EMAIL_DELIVERY=0'。不要将当前状态误解为 v1.2 已生产发布。
+> 当前仓库是 **v1.2.0-implementation**：v1.1/v1.2 代码和本地测试已完成，但真实电台、生产印刷、邮件投递和恢复演练仍未完成。生产配置目前保持 `FEATURE_AGENT_INGEST=0`、`FEATURE_PRINT=1`、`FEATURE_EMAIL_DELIVERY=0`。不要将当前状态误解为 v1.2 全量生产发布。
+>
+> **线上状态（最近一次检查：2026-09-14）**：`main` 已推送到 GitHub，Cloudflare Worker `myqsl` 的最新版本已部署并承接 100% 流量（部署记录 `4a1dbed3-4a98-4690-90da-7ae77671d1e6`，版本 `55b540ed-a302-408b-a028-1f036f24cc07`，创建时间 `2026-09-13T16:05:13Z`）。Cloudflare 中已确认存在 `D1_REST_API_TOKEN` 和 `RATE_LIMIT_SALT` 两个 Worker Secret。当前 `/healthz` 已返回 `HTTP 200`；`/readyz` 到达 Worker 后返回预期的应用层 `HTTP 401`（缺少 Access assertion），不再被边缘层重定向到 Access 登录页。
 
-完整需求与技术边界见 [PRD.md](PRD.md)，阶段证据见 [docs/phase-2/execution-log.md](docs/phase-2/execution-log.md)。
+完整需求与技术边界见 [PRD.md](PRD.md)，阶段证据见 [docs/phase-2/execution-log.md](docs/phase-2/execution-log.md)，履约闭环验收报告见 [FULFILLMENT.md](FULFILLMENT.md)，交接手册见 [handover.md](handover.md)。
 
 ## 目录
 
@@ -18,8 +20,24 @@ myQSL 是面向业余无线电台主的单所有者 QSO 与 QSL 系统。它覆�
 - [本地安装](#本地安装)
 - [无线电 Agent](#无线电-agent)
 - [GitHub 到 Cloudflare 部署](#github-到-cloudflare-部署)
+- [当前线上状态](#当前线上状态)
 - [验证、回滚与恢复](#验证回滚与恢复)
 - [当前限制](#当前限制)
+
+## 当前线上状态
+
+| 检查项 | 当前结果 | 说明 |
+|---|---|---|
+| GitHub `main` | 已同步 | 最近一次推送已包含当前生产配置和部署流程修复 |
+| Cloudflare Worker `myqsl` | 已部署 | 最近一次检查显示最新版本为 100% 流量 |
+| `D1_REST_API_TOKEN` | 已存在 | 已通过 Wrangler 读取远程 Secret 名称确认，内容不会回显 |
+| `RATE_LIMIT_SALT` | 已存在 | 已通过 Wrangler 读取远程 Secret 名称确认，内容不会回显 |
+| `/healthz` 公开探活 | 已通过 | 返回 `HTTP 200`，响应为 `{"status":"ok"}` |
+| `/readyz` 未认证访问 | 按预期拒绝 | 返回应用层 `HTTP 401`，需要 Cloudflare Access assertion |
+| Agent 实时入库 | 暂不开放 | `FEATURE_AGENT_INGEST=0` |
+| QRZ 邮件发卡 | 暂不开放 | `FEATURE_EMAIL_DELIVERY=0` |
+
+Cloudflare 部署记录和公开探活均已通过，但不等同于业务验收完成。下一步仍需使用有效的 Access assertion 验证 `/readyz`、Owner 登录、D1/R2 读写和恢复流程。
 
 ## 功能概览
 
@@ -202,6 +220,8 @@ pnpm exec tsx scripts/build-agent.mts
 - Workflow：'myqsl-d1-backup'、'myqsl-email-dispatch'（邮件开关关闭时不发送）
 - Custom Domain：'myqsl.203031.xyz'
 
+最近一次 Cloudflare 检查结果：Worker 最新部署版本已获得 100% 流量；自定义域名可到达 Worker，`/healthz` 返回 `HTTP 200`，`/readyz` 返回应用层 `HTTP 401`。这表明公开探活路径已正确绕过边缘 Access，受保护的就绪检查仍按预期要求认证。
+
 首次部署前创建/确认 D1、R2、Access 应用和自定义域名；不要把真实 token、密码、PII key 或 QRZ/Resend 凭据提交 Git。
 
 ### GitHub Actions
@@ -251,12 +271,16 @@ FEATURE_EMAIL_DELIVERY=0
 ### 部署后检查
 
 ~~~bash
-curl -fSs https://myqsl.203031.xyz/healthz
-curl -fSs https://myqsl.203031.xyz/readyz
+curl -iSs https://myqsl.203031.xyz/healthz
+curl -iSs https://myqsl.203031.xyz/readyz
 pnpm verify:production --strict
 ~~~
 
-'/readyz' 需要 Owner 身份；生产预检必须在真实 secrets 可验证时运行。当前仓库没有执行实际生产 push/deploy。
+验收标准如下：
+
+- `/healthz` 应返回 `HTTP 200`；`/readyz` 未携带 assertion 时返回应用层 `HTTP 401`，携带有效 Owner/Service Auth 后再验证 `HTTP 200`。
+- 本次检查中 `/healthz` 返回 `HTTP 200`，`/readyz` 返回预期的应用层 `HTTP 401`，未出现边缘 Access `302` 重定向，公开探活验收 **通过**。
+- `pnpm verify:production --strict` 必须在部署凭据和全部生产 Secret 可验证时运行；不要把本地 `--dry-run --skip-secrets` 结果当作生产验收。
 
 ## 验证、回滚与恢复
 
@@ -271,9 +295,10 @@ pnpm verify:production --strict
 以下项目尚未满足 v1.2 生产发布条件：
 
 1. Windows 11、macOS、Linux 的真实 WSJT-X/N1MM 数据包、升级、重启、断网 24 小时补传。
-2. Cloudflare Access Service Auth、QRZ 订阅、Resend 域、PII key 的真实配置和验证。
-3. PDF 独立 QR/文字解析、中文字体授权、TrimBox/BleedBox 和实体打印尺测。
-4. Email Workflow/租约恢复、provider fault injection、Owner 完整 E2E、D1/R2/PII 恢复演练。
+2. `/readyz`、Owner API 和管理端的有效 Cloudflare Access assertion 尚未完成线上实测；当前仅验证了未认证请求会被应用层 `401` 拒绝。
+3. QRZ 订阅、Resend 域、PII key 和 Agent Access Service Auth 的真实配置与验证。
+4. PDF 独立 QR/文字解析、中文字体授权、TrimBox/BleedBox 和实体打印尺测。
+5. Email Workflow/租约恢复、provider fault injection、Owner 完整 E2E、D1/R2/PII 恢复演练。
 
 最近一次本地证据：包/脚本 77、Web 33、Worker 61、Agent 4 个测试通过；Lint、TypeScript、构建、Bundle 和占位符门禁通过。Worker 测试可能输出 Wrangler 日志目录 EPERM 与预期 'EXPORT_UNAVAILABLE'，但进程退出码为 0。
 
