@@ -51,6 +51,36 @@ describe("template API", () => {
     expect(target?.version).toBe(2);
   });
 
+  it("rejects a layout PATCH that uses the version captured before a background upload", async () => {
+    const createRes = await exports.default.fetch("https://example.test/api/v1/card-templates", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ name: "background-version-regression", schema_version: 1, base_width: 1264, base_height: 848, elements: [] })
+    });
+    expect(createRes.status).toBe(201);
+    const created = ((await createRes.json()) as { data: { id: number; version: number } }).data;
+
+    const uploadRes = await exports.default.fetch(`https://example.test/api/v1/card-templates/${created.id}/background`, {
+      method: "POST",
+      headers: { "X-EQSR-Test-Actor": "owner", Origin: "http://localhost:8787", "X-EQSR-Request": "1", "Content-Type": "image/png" },
+      body: new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 1, 2, 3])
+    });
+    expect(uploadRes.status).toBe(201);
+
+    const stalePatch = await exports.default.fetch(`https://example.test/api/v1/card-templates/${created.id}`, {
+      method: "PATCH",
+      headers: { ...headers, "If-Match": `"${created.version}"` },
+      body: JSON.stringify({ name: "must-not-overwrite" })
+    });
+    expect(stalePatch.status).toBe(412);
+
+    const currentRes = await exports.default.fetch(`https://example.test/api/v1/card-templates/${created.id}`, { method: "GET", headers });
+    const current = ((await currentRes.json()) as { data: { name: string; version: number; background_r2_key: string | null } }).data;
+    expect(current.name).toBe("background-version-regression");
+    expect(current.version).toBe(created.version + 1);
+    expect(current.background_r2_key).toBeTruthy();
+  });
+
   it("updates template with PATCH using optimistic concurrency (If-Match / version)", async () => {
     // 1. Create template
     const createRes = await exports.default.fetch("https://example.test/api/v1/card-templates", {
@@ -100,4 +130,3 @@ describe("template API", () => {
     expect(auditRow).toBeDefined();
   });
 });
-

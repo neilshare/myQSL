@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "base_width": 1264,
+  "base_height": 848,
+  "elements": [
+    {
+      "type": "text",
+      "x": 0.5,
+      "y": 0.24,
+      "field": "station_callsign",
+      "font": "Inter",
+      "font_size": 72,
+      "color": "#FFFFFF",
+      "align": "center"
+    },
+    {
+      "type": "qr",
+      "x": 0.78,
+      "y": 0.72,
+      "width": 0.16,
+      "height": 0.16,
+      "value": "public_url"
+    }
+  ]
+}
