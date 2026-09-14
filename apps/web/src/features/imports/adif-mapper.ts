@@ -19,7 +19,10 @@ export const CORE_ADIF_FIELDS = new Set([
   "MY_GRID",
   "MY_RIG",
   "MY_ANTENNA",
-  "MY_POWER_W"
+  "MY_POWER_W",
+  // ADIF has no standard "other station power" tag.  Keep the
+  // application-owned value explicit so import/export stays lossless.
+  "APP_MYQSL_OTHER_POWER_W"
 ]);
 
 export function recordToQso(record: AdifRecord): Record<string, unknown> {
@@ -64,6 +67,9 @@ export function recordToQso(record: AdifRecord): Record<string, unknown> {
     my_antenna: core.my_antenna ? String(core.my_antenna) : undefined,
     my_power_w: core.my_power_w !== undefined && core.my_power_w !== null && core.my_power_w !== "" && !Number.isNaN(Number(core.my_power_w))
       ? Number(core.my_power_w)
+      : undefined,
+    other_power_w: core.app_myqsl_other_power_w !== undefined && core.app_myqsl_other_power_w !== null && core.app_myqsl_other_power_w !== "" && !Number.isNaN(Number(core.app_myqsl_other_power_w))
+      ? Number(core.app_myqsl_other_power_w)
       : undefined,
     freq_mhz: freqMhz,
     adif_extra: extra
@@ -117,9 +123,14 @@ export function qsoToAdifRecord(row: Record<string, unknown>): AdifRecord {
   }
 
   // 2. Station & MY_* fields
-  const MY_FIELDS = ["MY_GRID", "MY_RIG", "MY_ANTENNA", "MY_POWER_W"];
-  for (const field of MY_FIELDS) {
-    const lower = field.toLowerCase();
+  const MY_FIELDS: Array<[string, string]> = [
+    ["MY_GRID", "my_grid"],
+    ["MY_RIG", "my_rig"],
+    ["MY_ANTENNA", "my_antenna"],
+    ["MY_POWER_W", "my_power_w"],
+    ["APP_MYQSL_OTHER_POWER_W", "other_power_w"]
+  ];
+  for (const [field, lower] of MY_FIELDS) {
     const val = row[lower];
     if (val !== null && val !== undefined && val !== "") {
       fields[field] = String(val);

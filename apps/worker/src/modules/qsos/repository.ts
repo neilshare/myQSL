@@ -23,6 +23,7 @@ export interface QsoRow {
   my_rig: string | null;
   my_antenna: string | null;
   my_power_w: number | null;
+  other_power_w: number | null;
   adif_extra_json: string;
   dedupe_key: string;
   duplicate_ordinal: number;
@@ -50,6 +51,10 @@ export interface QsoInsert {
   name: string | null;
   qth: string | null;
   comment: string | null;
+  my_rig?: string | null;
+  my_antenna?: string | null;
+  my_power_w?: number | null;
+  other_power_w?: number | null;
   adif_extra_json: string;
   dedupe_key: string;
   duplicate_ordinal: number;
@@ -61,7 +66,7 @@ export interface QsoInsert {
 function mapRow(row: Record<string, unknown>): QsoRow {
   const nullable = (key: string) => (row[key] === null || row[key] === undefined ? null : String(row[key]));
   return {
-    id: Number(row.id), station_id: Number(row.station_id), station_callsign: String(row.station_callsign), call: String(row.call), qso_date: String(row.qso_date), time_on: String(row.time_on), qso_at: Number(row.qso_at), band: String(row.band), freq_hz: row.freq_hz == null ? null : Number(row.freq_hz), mode: String(row.mode), submode: nullable("submode"), rst_sent: nullable("rst_sent"), rst_rcvd: nullable("rst_rcvd"), gridsquare: nullable("gridsquare"), name: nullable("name"), qth: nullable("qth"), comment: nullable("comment"), my_grid: nullable("my_grid"), my_rig: nullable("my_rig"), my_antenna: nullable("my_antenna"), my_power_w: row.my_power_w == null ? null : Number(row.my_power_w), adif_extra_json: String(row.adif_extra_json), dedupe_key: String(row.dedupe_key), duplicate_ordinal: Number(row.duplicate_ordinal), source: String(row.source), version: Number(row.version), deleted_at: row.deleted_at == null ? null : Number(row.deleted_at), created_at: Number(row.created_at), updated_at: Number(row.updated_at)
+    id: Number(row.id), station_id: Number(row.station_id), station_callsign: String(row.station_callsign), call: String(row.call), qso_date: String(row.qso_date), time_on: String(row.time_on), qso_at: Number(row.qso_at), band: String(row.band), freq_hz: row.freq_hz == null ? null : Number(row.freq_hz), mode: String(row.mode), submode: nullable("submode"), rst_sent: nullable("rst_sent"), rst_rcvd: nullable("rst_rcvd"), gridsquare: nullable("gridsquare"), name: nullable("name"), qth: nullable("qth"), comment: nullable("comment"), my_grid: nullable("my_grid"), my_rig: nullable("my_rig"), my_antenna: nullable("my_antenna"), my_power_w: row.my_power_w == null ? null : Number(row.my_power_w), other_power_w: row.other_power_w == null ? null : Number(row.other_power_w), adif_extra_json: String(row.adif_extra_json), dedupe_key: String(row.dedupe_key), duplicate_ordinal: Number(row.duplicate_ordinal), source: String(row.source), version: Number(row.version), deleted_at: row.deleted_at == null ? null : Number(row.deleted_at), created_at: Number(row.created_at), updated_at: Number(row.updated_at)
   };
 }
 
@@ -80,8 +85,8 @@ export class QsoRepository {
 
   async insert(input: QsoInsert, auditEvent?: AuditEventInput): Promise<QsoRow> {
     const insertStmt = this.db.prepare(
-      `INSERT INTO qsos (station_id, station_callsign, call, qso_date, time_on, qso_at, band, freq_hz, mode, submode, rst_sent, rst_rcvd, gridsquare, name, qth, comment, adif_extra_json, dedupe_key, duplicate_ordinal, source, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`
+      `INSERT INTO qsos (station_id, station_callsign, call, qso_date, time_on, qso_at, band, freq_hz, mode, submode, rst_sent, rst_rcvd, gridsquare, name, qth, comment, my_rig, my_antenna, my_power_w, other_power_w, adif_extra_json, dedupe_key, duplicate_ordinal, source, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`
     ).bind(
       input.station_id,
       input.station_callsign,
@@ -99,6 +104,10 @@ export class QsoRepository {
       input.name ?? null,
       input.qth ?? null,
       input.comment ?? null,
+      input.my_rig ?? null,
+      input.my_antenna ?? null,
+      input.my_power_w ?? null,
+      input.other_power_w ?? null,
       input.adif_extra_json ?? "{}",
       input.dedupe_key,
       input.duplicate_ordinal ?? 0,
@@ -181,7 +190,7 @@ export class QsoRepository {
   }
 
   async updateIfVersion(id: number, version: number, patch: Record<string, unknown>, now: number, auditEvent?: AuditEventInput): Promise<QsoRow | null> {
-    const allowed = ["comment", "name", "qth", "rst_sent", "rst_rcvd", "gridsquare", "freq_hz", "band", "mode", "submode", "dedupe_key", "adif_extra_json"];
+    const allowed = ["comment", "name", "qth", "rst_sent", "rst_rcvd", "gridsquare", "freq_hz", "band", "mode", "submode", "my_rig", "my_antenna", "my_power_w", "other_power_w", "dedupe_key", "adif_extra_json"];
     const entries = Object.entries(patch).filter(([key]) => allowed.includes(key));
     if (!entries.length) return this.findById(id);
     const assignments = entries.map(([key]) => `${key} = ?`).join(", ");

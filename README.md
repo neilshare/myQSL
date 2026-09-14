@@ -44,7 +44,7 @@ Cloudflare 部署记录和公开探活均已通过，但不等同于业务验收
 
 | 模块 | 已实现能力 | 关键边界 |
 |---|---|---|
-| QSO/ADIF | QSO 增删改查、软删除、ADIF 3.1.7 导入/导出、扩展字段保留 | 旧 QSO/card API 和 ID 保持兼容 |
+| QSO/ADIF | QSO 增删改查、软删除、ADIF 3.1.7 导入/导出、扩展字段保留、RST/QTH/功率/设备/天线记录 | 旧 QSO/card API 和 ID 保持兼容；新增字段由迁移 `0010_qso_other_power.sql` 增量加入 |
 | 卡片 | 模板、快照、草稿/就绪/发布/作废、公开号查验 | 发布卡片不受后续 QSO/模板修改影响 |
 | 实时入库 v1.1 | WSJT-X/N1MM UDP 解码、SQLite Outbox、HTTPS 幂等补传、Owner 审核收件箱 | 不控制电台；replace/delete 不自动改云端 QSO |
 | 印刷 v1.1/v1.2 | A4 四拼矢量 PDF、单卡 3 mm 出血、批次冻结、PDF 预检 | 每批≤200张；中文字体、独立二维码解码和实体尺测待验收 |
@@ -78,7 +78,7 @@ pnpm lint && pnpm typecheck && pnpm test
 pnpm build && pnpm check:bundle
 ~~~
 
-生产先部署兼容读路径，确认迁移 `0008_template_studio.sql`、`0009_print_asset_refs.sql` 已应用后，再按验收结果将 `FEATURE_TEMPLATE_STUDIO` 从 `0` 调为 `1`。当前开关保持关闭；这不会阻断已存在 V2 模板的读取、制卡或打印。
+生产先部署兼容读路径，确认迁移 `0008_template_studio.sql`、`0009_print_asset_refs.sql`、`0010_qso_other_power.sql` 已应用后，再按验收结果将 `FEATURE_TEMPLATE_STUDIO` 从 `0` 调为 `1`。当前开关保持关闭；这不会阻断已存在 V2 模板的读取、制卡或打印。
 
 ## 架构与目录
 
@@ -105,7 +105,7 @@ eqsr/
 ├── packages/radio-codec/        WSJT-X/N1MM UDP/XML codec
 ├── packages/card-renderer/      浏览器卡片渲染
 ├── packages/card-pdf/           A4/出血 PDF 矢量渲染与预检
-├── infra/migrations/             0001–0007 D1 增量迁移
+├── infra/migrations/             0001–0010 D1 增量迁移
 ├── scripts/                     生成、质量门禁、Agent 打包、PDF/备份验证
 ├── openapi/                     生成的 OpenAPI 3.1 YAML
 └── docs/                        设计、执行日志和运行手册
@@ -115,10 +115,13 @@ eqsr/
 
 ### QSO、导入和电子卡
 
-1. 在 '/admin/qsos' 维护 QSO；输入频率时会联动波段，支持 UTC、RST、网格和扩展字段。
-2. 在 '/admin/import' 导入 '.adi/.adif'；解析在 Web Worker 中执行，结果按 accepted/warning/duplicate/rejected 分桶。
-3. 在 '/admin/templates' 编辑背景和字段布局；在 '/admin/cards' 生成草稿、上传 PNG、发布或作废。
-4. 访客从 '/lookup' 按呼号和日期查询，公开卡片作废后优先返回 410。
+1. 在 '/admin/qsos' 维护 QSO；输入频率时会联动波段，支持 UTC/LOCAL 显示切换、SSB/FM/CW/AM/RTTY 快捷模式，以及 FT8 等自定义模式。
+2. QSO 录入会保存收信/发信 RST、对方 QTH、本台/对方功率、设备型号、天线和备注；本台功率/设备/天线会从默认台站设置预填，但仍可按单次通联修改。默认本台呼号回退为 `BI4BVN`，时间始终以 UTC 落库。
+3. 在 '/admin/import' 导入 '.adi/.adif'；解析在 Web Worker 中执行，结果按 accepted/warning/duplicate/rejected 分桶。
+4. 在 '/admin/templates' 编辑背景和字段布局；在 '/admin/cards' 生成草稿、上传 PNG、发布或作废。
+5. 访客从 '/lookup' 按呼号和日期查询，公开卡片作废后优先返回 410。
+
+日志页兼容手机、平板和 PC：顶部显示本地时间、UTC 时间、当前列表通联数和已发布 QSL 数；录入表单在窄屏单列、中等屏双列、宽屏多列布局之间自动切换。
 
 ### 实时 Agent 与审核
 
@@ -162,6 +165,8 @@ pnpm dev
 ~~~
 
 打开 'http://127.0.0.1:8787/admin/qsos'。本地配置文件 [wrangler.test.jsonc](wrangler.test.jsonc) 只用于测试，开启了 'TEST_AUTH_ENABLED=1' 和 phase-2 feature flags，不能复制到生产。
+
+如果已有本地 D1 数据，执行 `pnpm db:migrate:local` 会按顺序应用 `infra/migrations/0001_*` 至 `0010_qso_other_power.sql`；生产环境使用 `pnpm db:migrate:prod`，不要手工修改或逆向删除历史迁移。
 
 ### 本地质量门禁
 

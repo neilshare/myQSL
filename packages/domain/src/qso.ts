@@ -39,6 +39,10 @@ export const QsoInputSchema = z.object({
   gridsquare: z.string().trim().max(8).nullable().default(null),
   name: z.string().trim().max(80).nullable().default(null),
   qth: z.string().trim().max(160).nullable().default(null),
+  my_rig: z.string().trim().max(120).nullable().default(null),
+  my_antenna: z.string().trim().max(160).nullable().default(null),
+  my_power_w: z.number().int().nonnegative().max(100_000).nullable().default(null),
+  other_power_w: z.number().int().nonnegative().max(100_000).nullable().default(null),
   comment: z.string().max(2000).nullable().default(null),
   adif_extra: z.record(z.string(), z.string()).default({})
 }).refine((val) => isValidQsoDateTime(val.qso_date, val.time_on), {
@@ -78,6 +82,10 @@ export const QsoPatchSchema = z.object({
   gridsquare: z.string().trim().max(8).nullable().optional(),
   name: z.string().trim().max(80).nullable().optional(),
   qth: z.string().trim().max(160).nullable().optional(),
+  my_rig: z.string().trim().max(120).nullable().optional(),
+  my_antenna: z.string().trim().max(160).nullable().optional(),
+  my_power_w: z.number().int().nonnegative().max(100_000).nullable().optional(),
+  other_power_w: z.number().int().nonnegative().max(100_000).nullable().optional(),
   comment: z.string().max(2000).nullable().optional(),
   adif_extra: z.record(z.string(), z.string()).optional()
 }).strict();
@@ -95,6 +103,10 @@ export interface NormalizedQsoPatch {
   gridsquare?: string | null;
   name?: string | null;
   qth?: string | null;
+  my_rig?: string | null;
+  my_antenna?: string | null;
+  my_power_w?: number | null;
+  other_power_w?: number | null;
   comment?: string | null;
   adif_extra?: Record<string, string>;
 }
@@ -115,6 +127,10 @@ export function normalizeQsoPatch(input: QsoPatchInput): NormalizedQsoPatch {
   if (parsed.gridsquare !== undefined) normalized.gridsquare = parsed.gridsquare === null ? null : parsed.gridsquare.trim().toUpperCase();
   if (parsed.name !== undefined) normalized.name = parsed.name === null ? null : parsed.name.trim();
   if (parsed.qth !== undefined) normalized.qth = parsed.qth === null ? null : parsed.qth.trim();
+  if (parsed.my_rig !== undefined) normalized.my_rig = parsed.my_rig === null ? null : parsed.my_rig.trim();
+  if (parsed.my_antenna !== undefined) normalized.my_antenna = parsed.my_antenna === null ? null : parsed.my_antenna.trim();
+  if (parsed.my_power_w !== undefined) normalized.my_power_w = parsed.my_power_w;
+  if (parsed.other_power_w !== undefined) normalized.other_power_w = parsed.other_power_w;
   if (parsed.comment !== undefined) normalized.comment = parsed.comment;
   if (parsed.adif_extra !== undefined) normalized.adif_extra = { ...parsed.adif_extra };
 

@@ -184,6 +184,7 @@ export function AppLayout() {
       <footer className="app-footer">
         <div className="footer-inner">
           <span>{t("footer.text")}</span>
+          <span className="footer-author">作者：BI4BVN</span>
           <span className="footer-links">
             <NavLink to="/lookup">{t("footer.lookup")}</NavLink>
             <span className="divider">·</span>

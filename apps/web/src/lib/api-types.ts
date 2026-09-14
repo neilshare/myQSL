@@ -17,6 +17,10 @@ export interface QsoRecord {
   gridsquare: string | null;
   name: string | null;
   qth: string | null;
+  my_rig?: string | null;
+  my_antenna?: string | null;
+  my_power_w?: number | null;
+  other_power_w?: number | null;
   comment: string | null;
   adif_extra_json?: string;
   adif_extra?: Record<string, string>;

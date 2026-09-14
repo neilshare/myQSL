@@ -73,4 +73,43 @@ describe("QSO management", () => {
     const dateData = ((await dateRes.json()) as { data: Array<{ call: string; qso_date: string }> }).data;
     expect(dateData.every((r) => r.qso_date === "20260901")).toBe(true);
   });
+
+  it("persists QSO signal and station operating details", async () => {
+    const created = await ownerJson("/api/v1/qsos", {
+      method: "POST",
+      body: JSON.stringify({
+        ...validQso,
+        call: "BI4DETAIL",
+        time_on: "1600",
+        rst_sent: "59",
+        rst_rcvd: "57",
+        qth: "Shanghai",
+        my_rig: "IC-705",
+        my_antenna: "EFHW",
+        my_power_w: 10,
+        other_power_w: 50
+      })
+    });
+    expect(created.status).toBe(201);
+    const createdBody = (await created.json()) as { data: Record<string, unknown> };
+    expect(createdBody.data).toMatchObject({
+      rst_sent: "59",
+      rst_rcvd: "57",
+      qth: "Shanghai",
+      my_rig: "IC-705",
+      my_antenna: "EFHW",
+      my_power_w: 10,
+      other_power_w: 50
+    });
+
+    const id = Number(createdBody.data.id);
+    const version = Number(createdBody.data.version);
+    const patched = await ownerJson(`/api/v1/qsos/${id}`, {
+      method: "PATCH",
+      headers: { "If-Match": `W/"qso-${id}-${version}"` },
+      body: JSON.stringify({ other_power_w: 25, rst_rcvd: "58" })
+    });
+    expect(patched.status).toBe(200);
+    expect((await patched.json() as { data: Record<string, unknown> }).data).toMatchObject({ other_power_w: 25, rst_rcvd: "58" });
+  });
 });

@@ -29,6 +29,7 @@ describe("AppLayout", () => {
     expect(eqslFooterLink.getAttribute("href")).toBe("https://www.eqsl.cc");
     expect(eqslFooterLink.getAttribute("target")).toBe("_blank");
     expect(eqslFooterLink.getAttribute("rel")).toContain("noreferrer");
+    expect(screen.getByText("作者：BI4BVN")).toBeTruthy();
   });
 
   it("renders external links in mobile drawer when toggled", () => {

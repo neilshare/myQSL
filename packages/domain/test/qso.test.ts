@@ -23,6 +23,40 @@ describe("QSO normalization", () => {
     expect(await makeDedupeKey(qso)).toMatch(/^[a-f0-9]{64}$/);
   });
 
+  it("normalizes operator and counterpart operating details", () => {
+    const qso = normalizeQso({
+      station_callsign: "BI4BVN",
+      call: "BG4YYY",
+      qso_date: "20260914",
+      time_on: "1430",
+      band: "20M",
+      mode: "SSB",
+      my_rig: "  IC-705 ",
+      my_antenna: "  EFHW ",
+      my_power_w: 10,
+      other_power_w: 50,
+      qth: "  Shanghai  "
+    });
+    expect(qso.my_rig).toBe("IC-705");
+    expect(qso.my_antenna).toBe("EFHW");
+    expect(qso.my_power_w).toBe(10);
+    expect(qso.other_power_w).toBe(50);
+    expect(qso.qth).toBe("Shanghai");
+  });
+
+  it("rejects negative or implausibly large power values", () => {
+    const base = {
+      station_callsign: "BI4BVN",
+      call: "BG4YYY",
+      qso_date: "20260914",
+      time_on: "1430",
+      band: "20M",
+      mode: "SSB"
+    };
+    expect(() => normalizeQso({ ...base, my_power_w: -1 })).toThrow();
+    expect(() => normalizeQso({ ...base, other_power_w: 100001 })).toThrow();
+  });
+
   it("rejects malformed calls and dates", () => {
     expect(() =>
       normalizeQso({
@@ -53,6 +87,10 @@ describe("QSO patch normalization", () => {
     expect(patch.gridsquare).toBeUndefined();
     expect(patch.name).toBeUndefined();
     expect(patch.qth).toBeUndefined();
+    expect(patch.my_rig).toBeUndefined();
+    expect(patch.my_antenna).toBeUndefined();
+    expect(patch.my_power_w).toBeUndefined();
+    expect(patch.other_power_w).toBeUndefined();
     expect(patch.adif_extra).toBeUndefined();
   });
 
@@ -77,6 +115,14 @@ describe("QSO patch normalization", () => {
     expect(patch.mode).toBe("CW");
     expect(patch.submode).toBe("RTTY");
     expect(patch.adif_extra).toEqual({ PROP_MODE: "ES" });
+  });
+
+  it("normalizes operating detail patches", () => {
+    const patch = normalizeQsoPatch({ my_rig: " IC-705 ", my_antenna: " EFHW ", my_power_w: 10, other_power_w: 5 });
+    expect(patch.my_rig).toBe("IC-705");
+    expect(patch.my_antenna).toBe("EFHW");
+    expect(patch.my_power_w).toBe(10);
+    expect(patch.other_power_w).toBe(5);
   });
 
   it("handles empty patch input", () => {

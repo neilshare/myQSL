@@ -122,4 +122,25 @@ describe("ADIF Semantic Mapper", () => {
     const qso = recordToQso(record);
     expect(qso.my_power_w).toBe(0);
   });
+
+  it("round-trips the application-owned other-station power field", () => {
+    const record = {
+      fields: {
+        CALL: "VR2ZZZ",
+        STATION_CALLSIGN: "BI4BVN",
+        QSO_DATE: "20260905",
+        TIME_ON: "080000",
+        BAND: "20M",
+        MODE: "SSB",
+        APP_MYQSL_OTHER_POWER_W: "50"
+      },
+      types: {}
+    };
+
+    const qso = recordToQso(record);
+    expect(qso.other_power_w).toBe(50);
+
+    const reconstructed = qsoToAdifRecord(qso);
+    expect(reconstructed.fields.APP_MYQSL_OTHER_POWER_W).toBe("50");
+  });
 });

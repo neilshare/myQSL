@@ -109,6 +109,10 @@ export class QsoService {
       name: qso.name,
       qth: qso.qth,
       comment: qso.comment,
+      my_rig: qso.my_rig,
+      my_antenna: qso.my_antenna,
+      my_power_w: qso.my_power_w,
+      other_power_w: qso.other_power_w,
       adif_extra_json: JSON.stringify(qso.adif_extra),
       dedupe_key: dedupeKey,
       duplicate_ordinal: duplicate ? await this.repository.nextDuplicateOrdinal(dedupeKey) : 0,
@@ -199,6 +203,10 @@ export class QsoService {
     if (patch.gridsquare !== undefined) dbPatch.gridsquare = patch.gridsquare;
     if (patch.name !== undefined) dbPatch.name = patch.name;
     if (patch.qth !== undefined) dbPatch.qth = patch.qth;
+    if (patch.my_rig !== undefined) dbPatch.my_rig = patch.my_rig;
+    if (patch.my_antenna !== undefined) dbPatch.my_antenna = patch.my_antenna;
+    if (patch.my_power_w !== undefined) dbPatch.my_power_w = patch.my_power_w;
+    if (patch.other_power_w !== undefined) dbPatch.other_power_w = patch.other_power_w;
     if (patch.comment !== undefined) dbPatch.comment = patch.comment;
     if (patch.adif_extra !== undefined) dbPatch.adif_extra_json = JSON.stringify(patch.adif_extra);
     if (newDedupeKey && newDedupeKey !== existing.dedupe_key) dbPatch.dedupe_key = newDedupeKey;

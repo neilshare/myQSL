@@ -399,6 +399,450 @@ form {
   width: 100%;
 }
 
+/* QSO entry surface: the same semantic form scales from a handheld logbook to a desktop console. */
+.qso-form {
+  gap: 1rem;
+}
+
+.qso-form-section {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: clamp(1rem, 2vw, 1.35rem);
+  background: color-mix(in srgb, var(--bg-card) 94%, var(--accent-primary) 6%);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  box-shadow: var(--card-shadow);
+}
+
+.qso-form-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.qso-form-section-heading h3 {
+  margin: 0.2rem 0 0;
+  color: var(--text-main);
+  font-size: 1.05rem;
+}
+
+.qso-form-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.qso-field {
+  min-width: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.qso-field-call,
+.qso-field-mode,
+.qso-field-comment {
+  grid-column: span 2;
+}
+
+.qso-field-heading {
+  min-height: 1.4rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.qso-field-heading label,
+.qso-field > label {
+  display: block;
+  min-height: 1.4rem;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+.qso-field input,
+.qso-field select,
+.qso-field textarea {
+  min-width: 0;
+}
+
+.qso-field textarea {
+  resize: vertical;
+}
+
+.qso-external-links {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+  font-size: 0.72rem;
+}
+
+.qso-external-links a {
+  color: var(--accent-primary);
+  text-decoration: none;
+}
+
+.qso-external-links a:hover {
+  text-decoration: underline;
+}
+
+.qso-inline-button {
+  min-height: 28px;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent-primary);
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.qso-time-mode {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 0.15rem;
+  padding: 0.2rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--control-pill-bg);
+}
+
+.qso-time-mode button {
+  min-height: 28px;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.qso-time-mode button.active {
+  background: var(--control-pill-active);
+  color: var(--control-pill-active-text);
+}
+
+.mode-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  min-height: 30px;
+}
+
+.mode-chip {
+  min-height: 30px;
+  padding: 0.25rem 0.65rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.mode-chip.active,
+.mode-chip:hover:not(:disabled) {
+  border-color: var(--accent-primary);
+  background: var(--badge-bg);
+  color: var(--badge-text);
+}
+
+.qso-input-with-suffix {
+  position: relative;
+}
+
+.qso-input-with-suffix input {
+  padding-right: 2.2rem;
+}
+
+.qso-input-with-suffix span {
+  position: absolute;
+  top: 50%;
+  right: 0.8rem;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  pointer-events: none;
+}
+
+.qso-field-hint {
+  color: var(--accent-primary);
+  font-size: 0.75rem;
+}
+
+.qso-form-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.qso-form-actions .primary-button {
+  min-width: 132px;
+}
+
+/* Shared primary action styling also applies to anchors (for example the
+ * "新增通联" jump action), not only native <button> elements. */
+.primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--accent-primary);
+  border-radius: 8px;
+  background: var(--accent-primary);
+  color: #fff;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.primary-button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent-primary) 86%, #000 14%);
+  border-color: color-mix(in srgb, var(--accent-primary) 86%, #000 14%);
+  transform: translateY(-1px);
+}
+
+.primary-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.qso-message {
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.qso-message.success {
+  color: var(--success);
+}
+
+.qso-message.error {
+  color: var(--danger);
+}
+
+.qso-page-header {
+  align-items: flex-end;
+}
+
+.qso-page-header h2 {
+  margin-top: 0.2rem;
+}
+
+.qso-page-header .muted {
+  max-width: 48rem;
+  margin: 0.4rem 0 0;
+}
+
+.qso-page-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.qso-create-action {
+  text-decoration: none;
+}
+
+.qso-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.qso-summary-card {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.9rem 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+}
+
+.qso-summary-label,
+.qso-summary-detail {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+
+.qso-summary-card strong {
+  overflow: hidden;
+  color: var(--text-main);
+  font-size: clamp(1.05rem, 2.2vw, 1.55rem);
+  letter-spacing: -0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qso-filter-section,
+.qso-create-section,
+.qso-edit-section {
+  margin-bottom: 1rem;
+}
+
+.section-heading-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.section-heading-row h3 {
+  margin: 0.2rem 0 0;
+  font-size: 1.05rem;
+}
+
+.qso-station-badge {
+  padding: 0.3rem 0.65rem;
+  border: 1px solid var(--badge-border);
+  border-radius: 999px;
+  background: var(--badge-bg);
+  color: var(--badge-text);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.qso-cancel-edit {
+  margin-top: 1rem;
+}
+
+.qso-empty {
+  margin: 0;
+  padding: 2.5rem 1rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.qso-row-primary,
+.qso-row-details {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.55rem 0.8rem;
+}
+
+.qso-row-primary strong {
+  color: var(--text-main);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+}
+
+.qso-row-date,
+.qso-row-details,
+.qso-external-row-link {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.qso-row-badge {
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--badge-border);
+  border-radius: 999px;
+  background: var(--badge-bg);
+  color: var(--badge-text);
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.qso-row-details {
+  margin-top: 0.4rem;
+}
+
+.qso-row-details span {
+  padding-right: 0.75rem;
+  border-right: 1px solid var(--border-subtle);
+}
+
+.qso-row-details span:last-child {
+  padding-right: 0;
+  border-right: 0;
+}
+
+.qso-external-row-link {
+  color: var(--accent-primary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+@media (max-width: 960px) {
+  .qso-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 960px) {
+  .qso-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .qso-summary-grid {
+    gap: 0.5rem;
+  }
+
+  .qso-summary-card {
+    padding: 0.75rem;
+  }
+
+  .section-heading-row {
+    flex-direction: column;
+  }
+
+  .qso-page-actions {
+    width: 100%;
+  }
+
+  .qso-page-actions > * {
+    flex: 1 1 auto;
+  }
+
+  .qso-form-section {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+
+  .qso-form-section-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .qso-time-mode {
+    align-self: flex-start;
+  }
+
+  .qso-form-grid {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+
+  .qso-field-call,
+  .qso-field-mode,
+  .qso-field-comment {
+    grid-column: span 1;
+  }
+
+  .qso-external-links {
+    font-size: 0.68rem;
+  }
+}
+
 label {
   display: grid;
   gap: 0.35rem;
@@ -644,6 +1088,12 @@ form.filters button {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.footer-author {
+  color: var(--text-muted);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.78rem;
 }
 
 .footer-links a {

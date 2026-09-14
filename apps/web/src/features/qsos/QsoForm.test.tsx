@@ -80,7 +80,7 @@ describe("QsoForm", () => {
   it("automatically populates current UTC date and time when initial values are empty", () => {
     render(
       <QsoForm
-        initial={{ call: "", station_callsign: "BI1ABC", qso_date: "", time_on: "", band: "", mode: "" }}
+        initial={{ call: "", station_callsign: "", qso_date: "", time_on: "", band: "", mode: "" }}
       />
     );
     const dateInput = screen.getByLabelText("UTC 日期") as HTMLInputElement;
@@ -171,5 +171,48 @@ describe("QsoForm", () => {
     const stored = JSON.parse(storageMock.getItem(FREQ_STORAGE_KEY) || "[]");
     expect(stored).toContain("438.125");
   });
-});
 
+  it("defaults the operator callsign to BI4BVN and captures reference fields", async () => {
+    const create = vi.fn().mockResolvedValue({});
+    render(
+      <QsoForm
+        initial={{ call: "BG1XYZ", station_callsign: "", qso_date: "20260905", time_on: "120000", band: "20M", mode: "SSB" }}
+        api={{ patch: vi.fn(), create }}
+      />
+    );
+
+    expect((screen.getByLabelText("本台呼号") as HTMLInputElement).value).toBe("BI4BVN");
+    fireEvent.change(screen.getByLabelText("收信信号报告"), { target: { value: "57" } });
+    fireEvent.change(screen.getByLabelText("发信信号报告"), { target: { value: "59" } });
+    fireEvent.change(screen.getByLabelText("对方QTH"), { target: { value: "上海" } });
+    fireEvent.change(screen.getByLabelText("本台功率"), { target: { value: "10" } });
+    fireEvent.change(screen.getByLabelText("对方功率"), { target: { value: "50" } });
+    fireEvent.change(screen.getByLabelText("设备型号"), { target: { value: "IC-705" } });
+    fireEvent.change(screen.getByLabelText("天线"), { target: { value: "EFHW" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({
+      station_callsign: "BI4BVN",
+      rst_sent: "59",
+      rst_rcvd: "57",
+      qth: "上海",
+      my_power_w: 10,
+      other_power_w: 50,
+      my_rig: "IC-705",
+      my_antenna: "EFHW"
+    }));
+  });
+
+  it("supports quick mode buttons while keeping custom mode input available", () => {
+    render(
+      <QsoForm
+        initial={{ call: "BG1XYZ", station_callsign: "BI4BVN", qso_date: "20260905", time_on: "120000", band: "20M", mode: "" }}
+      />
+    );
+    const modeInput = screen.getByLabelText("模式") as HTMLInputElement;
+    fireEvent.click(screen.getByRole("button", { name: "CW" }));
+    expect(modeInput.value).toBe("CW");
+    fireEvent.change(modeInput, { target: { value: "FT8" } });
+    expect(modeInput.value).toBe("FT8");
+  });
+});

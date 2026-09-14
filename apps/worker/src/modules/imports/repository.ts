@@ -195,18 +195,18 @@ export class ImportRepository {
     END`;
     statements.push(this.db.prepare(statusGuardSql).bind(input.jobId));
 
-    // 1. Group QSO inserts (at most 4 rows per INSERT statement to keep parameters <= 88 <= 100)
-    const ROWS_PER_STMT = 4;
+    // 1. Group QSO inserts (at most 3 rows per INSERT statement to keep parameters <= 78 <= 100)
+    const ROWS_PER_STMT = 3;
     for (let i = 0; i < input.qsoInserts.length; i += ROWS_PER_STMT) {
       const group = input.qsoInserts.slice(i, i + ROWS_PER_STMT);
       const rowPlaceholders = group
-        .map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+        .map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .join(", ");
       const sql = `INSERT INTO qsos (
         station_id, station_callsign, call, qso_date, time_on, qso_at,
         band, freq_hz, mode, submode, rst_sent, rst_rcvd, gridsquare,
-        name, qth, comment, adif_extra_json, dedupe_key, duplicate_ordinal,
-        source, created_at, updated_at
+        name, qth, comment, my_rig, my_antenna, my_power_w, other_power_w,
+        adif_extra_json, dedupe_key, duplicate_ordinal, source, created_at, updated_at
       ) VALUES ${rowPlaceholders} RETURNING id, dedupe_key, duplicate_ordinal`;
 
       const binds: unknown[] = [];
@@ -228,6 +228,10 @@ export class ImportRepository {
           row.name,
           row.qth,
           row.comment,
+          row.my_rig,
+          row.my_antenna,
+          row.my_power_w,
+          row.other_power_w,
           row.adif_extra_json,
           row.dedupe_key,
           row.duplicate_ordinal,

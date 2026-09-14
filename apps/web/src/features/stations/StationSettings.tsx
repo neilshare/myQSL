@@ -79,7 +79,7 @@ export function StationSettings() {
             <input
               value={callsign}
               onChange={(e) => setCallsign(e.target.value)}
-              placeholder="BI1ABC"
+              placeholder="BI4BVN"
               required
             />
           </label>
@@ -88,7 +88,7 @@ export function StationSettings() {
             <input
               value={operator}
               onChange={(e) => setOperator(e.target.value)}
-              placeholder="BI1ABC"
+              placeholder="BI4BVN"
             />
           </label>
           <label>

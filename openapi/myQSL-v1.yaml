@@ -1130,6 +1130,22 @@ components:
         qth:
           type: string
           nullable: true
+        my_rig:
+          type: string
+          nullable: true
+        my_antenna:
+          type: string
+          nullable: true
+        my_power_w:
+          type: integer
+          minimum: 0
+          maximum: 100000
+          nullable: true
+        other_power_w:
+          type: integer
+          minimum: 0
+          maximum: 100000
+          nullable: true
         comment:
           type: string
           nullable: true
@@ -1184,6 +1200,22 @@ components:
           nullable: true
         qth:
           type: string
+          nullable: true
+        my_rig:
+          type: string
+          nullable: true
+        my_antenna:
+          type: string
+          nullable: true
+        my_power_w:
+          type: integer
+          minimum: 0
+          maximum: 100000
+          nullable: true
+        other_power_w:
+          type: integer
+          minimum: 0
+          maximum: 100000
           nullable: true
         comment:
           type: string

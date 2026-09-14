@@ -108,7 +108,7 @@ flowchart LR
 | 本地代理 | apps/agent | UDP receiver、SQLite outbox、HTTPS uploader、doctor/status、发布打包 |
 | Worker | apps/worker | 鉴权、实时入库、打印、制卡、QRZ、发信、定时补偿 |
 | Web | apps/web | QSO/卡片基础页面、打印、发卡、设备设置、异常收件箱 |
-| 迁移 | infra/migrations | 0004–0007 增量迁移，禁止修改历史迁移 |
+| 迁移 | infra/migrations | 0004–0010 增量迁移，禁止修改历史迁移 |
 
 ### 3.2 安全分组
 
@@ -145,6 +145,23 @@ flowchart LR
 实时入库：agent_devices、agent_profiles、ingest_events、qso_source_links。
 打印/制卡：print_batches、print_batch_items、card_batches、card_batch_items。
 目录/邮件：directory_contacts、delivery_batches、delivery_batch_items、card_deliveries、delivery_attempts、delivery_webhook_events、email_suppressions、dispatch_daily_quotas、dispatch_throttle。
+
+#### QSO 录入字段（当前迭代）
+
+QSO 表单和 API 统一保存以下通联细节：
+
+| 字段 | 含义 | 保存规则 |
+|---|---|---|
+| `rst_sent` / `rst_rcvd` | 发信/收信信号报告 | 每条 QSO 独立保存，可为空；兼容 SSB、CW 与 FT8 数字报告 |
+| `qth` | 对方 QTH | 每条 QSO 独立保存，最长 160 字符 |
+| `my_rig` / `my_antenna` | 本台设备型号/天线 | 默认从台站设置预填，但保存为该条 QSO 的快照，可单独修改 |
+| `my_power_w` | 本台发射功率 | 非负整数，最大 100000 W；默认从台站设置预填 |
+| `other_power_w` | 对方功率 | 非负整数，最大 100000 W；无默认值 |
+| `comment` | 备注 | 最长 2000 字符 |
+
+本迭代明确不加入 CQ 分区。界面提供 UTC/LOCAL 显示切换，但 D1 只保存 UTC `qso_date`/`time_on`；切换为 LOCAL 后提交会先转换为 UTC。模式提供 SSB/FM/CW/AM/RTTY 快捷按钮，同时允许输入 FT8 等自定义模式。默认本台呼号回退值为 `BI4BVN`，应用页脚作者显示为 `BI4BVN`。
+
+迁移 `0010_qso_other_power.sql` 只新增 `qsos.other_power_w`，历史迁移不修改；已有 `my_rig`、`my_antenna`、`my_power_w` 列通过本次 API/Worker 贯通，旧记录读取为空不会失败。
 
 关键兼容规则：已有 qsl_cards.id/status/public_id 不变；Agent 入库的 QSO source='api'；原始外部来源由 qso_source_links 独立保存；打印和邮件均只读冻结快照。
 
