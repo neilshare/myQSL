@@ -7,20 +7,45 @@ function isDraftRecord(value: unknown): value is DraftRecord {
 }
 
 export class DraftStore {
-  constructor(private readonly storage: Pick<Storage, "getItem" | "setItem" | "removeItem"> = typeof localStorage === "undefined" ? { getItem: () => null, setItem: () => { throw new Error("Draft storage unavailable"); }, removeItem: () => undefined } : localStorage, private readonly prefix = "myqsl:template-draft:") {}
+  private readonly storage?: Pick<Storage, "getItem" | "setItem" | "removeItem">;
+  private readonly prefix: string;
+  private databasePromise?: Promise<IDBDatabase>;
+  constructor(storage?: Pick<Storage, "getItem" | "setItem" | "removeItem">, prefix = "myqsl:template-draft:") {
+    this.storage = storage ?? (typeof indexedDB === "undefined" ? (typeof localStorage === "undefined" ? undefined : localStorage) : undefined);
+    this.prefix = prefix;
+  }
+  private openDatabase(): Promise<IDBDatabase> {
+    if (this.databasePromise) return this.databasePromise;
+    this.databasePromise = new Promise((resolve, reject) => {
+      const request = indexedDB.open("myqsl-template-studio", 1);
+      request.onupgradeneeded = () => request.result.createObjectStore("drafts");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error ?? new Error("Draft database unavailable"));
+    });
+    return this.databasePromise;
+  }
+  private async put(key: string, value: DraftRecord): Promise<void> {
+    if (this.storage) { this.storage.setItem(key, JSON.stringify(value)); return; }
+    const database = await this.openDatabase();
+    await new Promise<void>((resolve, reject) => { const request = database.transaction("drafts", "readwrite").objectStore("drafts").put(value, key); request.onsuccess = () => resolve(); request.onerror = () => reject(request.error ?? new Error("Draft storage failed")); });
+  }
+  private async get(key: string): Promise<unknown> {
+    if (this.storage) { const raw = this.storage.getItem(key); if (!raw) return null; try { return JSON.parse(raw) as unknown; } catch { return null; } }
+    const database = await this.openDatabase();
+    return new Promise((resolve, reject) => { const request = database.transaction("drafts", "readonly").objectStore("drafts").get(key); request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error ?? new Error("Draft storage failed")); });
+  }
+  private async remove(key: string): Promise<void> {
+    if (this.storage) { this.storage.removeItem(key); return; }
+    const database = await this.openDatabase();
+    await new Promise<void>((resolve, reject) => { const request = database.transaction("drafts", "readwrite").objectStore("drafts").delete(key); request.onsuccess = () => resolve(); request.onerror = () => reject(request.error ?? new Error("Draft storage failed")); });
+  }
   async save(record: DraftRecord): Promise<void> {
     if (!isDraftRecord(record)) throw new Error("Invalid draft record");
-    this.storage.setItem(`${this.prefix}${record.templateId ?? "new"}`, JSON.stringify(record));
+    await this.put(`${this.prefix}${record.templateId ?? "new"}`, record);
   }
   async load(templateId: number | null): Promise<DraftRecord | null> {
-    const raw = this.storage.getItem(`${this.prefix}${templateId ?? "new"}`);
-    if (!raw) return null;
-    try {
-      const parsed: unknown = JSON.parse(raw);
-      return isDraftRecord(parsed) ? parsed : null;
-    } catch {
-      return null;
-    }
+    const parsed = await this.get(`${this.prefix}${templateId ?? "new"}`);
+    return isDraftRecord(parsed) ? parsed : null;
   }
-  async clear(templateId: number | null): Promise<void> { this.storage.removeItem(`${this.prefix}${templateId ?? "new"}`); }
+  async clear(templateId: number | null): Promise<void> { await this.remove(`${this.prefix}${templateId ?? "new"}`); }
 }
