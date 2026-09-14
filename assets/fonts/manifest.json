@@ -1,0 +1,46 @@
+{
+  "version": "fonts-2026-09-14",
+  "delivery": "r2-or-local-dev",
+  "fonts": [
+    {
+      "id": "barlow-condensed-600",
+      "file": "BarlowCondensed-SemiBold.ttf",
+      "family": "Barlow Condensed",
+      "weight": 600,
+      "bytes": 109428,
+      "sha256": "7b619d14bc2327509a9ef32b0890f709626f7ecc9ff61191c2a4314c5499d2d9",
+      "license": "licenses/OFL-BarlowCondensed.txt",
+      "source": "https://github.com/google/fonts/tree/main/ofl/barlowcondensed"
+    },
+    {
+      "id": "ibm-plex-mono-400",
+      "file": "IBMPlexMono-Regular.ttf",
+      "family": "IBM Plex Mono",
+      "weight": 400,
+      "bytes": 173052,
+      "sha256": "7c6fbddca4b700be918f5f6183d9bd4464fa427fe435f0b480d77fe2bb8c5a43",
+      "license": "licenses/OFL-IBM-Plex-Mono.txt",
+      "source": "https://github.com/IBM/plex/tree/master/packages/plex-mono"
+    },
+    {
+      "id": "ibm-plex-mono-600",
+      "file": "IBMPlexMono-SemiBold.ttf",
+      "family": "IBM Plex Mono",
+      "weight": 600,
+      "bytes": 174608,
+      "sha256": "f04d7c488ddf7d1fa99f2574efc3406ea4cbe17bb1af3a1ab960f84d0c96a172",
+      "license": "licenses/OFL-IBM-Plex-Mono.txt",
+      "source": "https://github.com/IBM/plex/tree/master/packages/plex-mono"
+    },
+    {
+      "id": "noto-sans-sc-400",
+      "file": "NotoSansSC-Variable.ttf",
+      "family": "Noto Sans SC",
+      "weight": 400,
+      "bytes": 17772300,
+      "sha256": "a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da",
+      "license": "licenses/OFL-NotoSansSC.txt",
+      "source": "https://github.com/google/fonts/tree/main/ofl/notosanssc"
+    }
+  ]
+}
