@@ -7,6 +7,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@myqsl/card-presets": "workspace:*",
     "@myqsl/domain": "workspace:*",
     "drizzle-orm": "0.45.2",
     "fast-xml-parser": "5.2.5",

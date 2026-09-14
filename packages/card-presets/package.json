@@ -1,0 +1,9 @@
+{
+  "name": "@myqsl/card-presets",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "typecheck": "tsc --noEmit", "test": "vitest run --root ../../ --config vitest.config.ts --project packages packages/card-presets/test/**/*.test.ts" },
+  "dependencies": { "@myqsl/domain": "workspace:*" },
+  "devDependencies": { "typescript": "5.9.2", "vitest": "4.1.0" }
+}

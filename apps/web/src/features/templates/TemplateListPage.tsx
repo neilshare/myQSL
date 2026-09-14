@@ -1,19 +1,29 @@
 import { useEffect, useState, useCallback } from "react";
 import { api, type CardTemplateRow } from "../../lib/api-client";
 import { useI18n } from "../../lib/i18n";
+import { useNavigate } from "react-router";
+import { CanvasPreview } from "./CanvasPreview";
+import type { TemplateV2 } from "@myqsl/domain";
+
+type CardPreset = { id: string; version: number; name: string; tags: string[]; layout: TemplateV2 };
 
 export function TemplateListPage() {
   const { t, locale } = useI18n();
   const [templates, setTemplates] = useState<CardTemplateRow[]>([]);
+  const [presets, setPresets] = useState<CardPreset[]>([]);
   const [loading, setLoading] = useState(false);
+  const [presetMessage, setPresetMessage] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const loadTemplates = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.templates.list();
-      const raw = res.data;
+      const [templateRes, presetRes] = await Promise.all([api.templates.list(), api.templates.presets()]);
+      const raw = templateRes.data;
       const list = Array.isArray(raw) ? raw : (Array.isArray((raw as any)?.data) ? (raw as any).data : []);
       setTemplates(list);
+      const rawPresets = presetRes.data;
+      setPresets(Array.isArray(rawPresets) ? rawPresets : []);
     } catch {
       setTemplates([]);
     } finally {
@@ -24,6 +34,17 @@ export function TemplateListPage() {
   useEffect(() => {
     void loadTemplates();
   }, [loadTemplates]);
+
+  const usePreset = async (preset: CardPreset) => {
+    try {
+      setPresetMessage(locale === "zh" ? `正在创建「${preset.name}」...` : `Creating ${preset.name}...`);
+      const key = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${preset.id}-${Date.now()}`;
+      const created = await api.templates.create({ name: preset.name, layout: preset.layout }, key);
+      navigate(`/admin/templates/edit?id=${created.data.id}`);
+    } catch (error) {
+      setPresetMessage(error instanceof Error ? error.message : (locale === "zh" ? "预设创建失败" : "Failed to create preset"));
+    }
+  };
 
   return (
     <section>
@@ -87,6 +108,22 @@ export function TemplateListPage() {
           ))}
         </div>
       )}
+
+      {presetMessage && <output role="status" style={{ display: "block", marginTop: "1rem", color: "var(--accent-primary)" }}>{presetMessage}</output>}
+      <section aria-labelledby="template-presets" style={{ marginTop: "2rem" }}>
+        <h3 id="template-presets">{locale === "zh" ? "推荐预设" : "Recommended presets"}</h3>
+        <p style={{ color: "var(--text-muted)" }}>{locale === "zh" ? "预设使用固定字体、印刷安全区和二维码白边，复制后可独立编辑。" : "Presets use controlled fonts, print-safe margins, and QR quiet zones. Copies are independent."}</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1rem" }}>
+          {presets.map((preset) => (
+            <article key={`${preset.id}:${preset.version}`} style={{ border: "1px solid var(--border-subtle)", borderRadius: "8px", padding: "1rem", background: "var(--bg-card)" }}>
+              <CanvasPreview template={preset.layout} qso={{ call: "JA1ABC", station_callsign: "BI1ABC", qso_date: "20260914", time_on: "0830", band: "20M", mode: "FT8", freq_hz: 14074000, gridsquare: "PM95" }} />
+              <h4 style={{ margin: "0.75rem 0 0.25rem" }}>{preset.name}</h4>
+              <p style={{ color: "var(--text-muted)", margin: 0, fontSize: "0.9rem" }}>{preset.tags.join(" · ")}</p>
+              <button type="button" onClick={() => void usePreset(preset)} style={{ marginTop: "0.75rem" }}>{locale === "zh" ? "使用此预设" : "Use this preset"}</button>
+            </article>
+          ))}
+        </div>
+      </section>
     </section>
   );
 }

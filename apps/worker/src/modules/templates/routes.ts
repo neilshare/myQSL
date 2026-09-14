@@ -9,6 +9,7 @@ import type { RequestVariables } from "../../platform/request-context";
 import { TemplateRepository } from "./repository";
 import { TemplateService } from "./service";
 import { sha256Hex } from "./asset-service";
+import { getPresets } from "@myqsl/card-presets";
 
 const idSchema = z.coerce.number().int().positive();
 const createTemplateSchema = z.object({
@@ -21,6 +22,7 @@ const createTemplateSchema = z.object({
 });
 
 export function registerTemplateRoutes(app: Hono<{ Bindings: Env; Variables: RequestVariables }>): void {
+  app.get("/api/v1/card-template-presets", (c) => c.json({ data: getPresets() }, 200, { "Cache-Control": "private, max-age=300" }));
   app.get("/api/v1/card-templates", async (c) => { const service = new TemplateService(new TemplateRepository(c.env.DB), new MediaStore(c.env.MEDIA)); return c.json({ data: await service.list() }); });
   app.post("/api/v1/card-templates", async (c) => {
     let idempotencyKey: string | null = null;

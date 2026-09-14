@@ -5,7 +5,7 @@ import type {
   CardRow,
   PublicCardSummary
 } from "./api-types";
-import type { CardTemplate, QsoInput, StationInput } from "@myqsl/domain";
+import type { CardTemplate, TemplateV2, QsoInput, StationInput } from "@myqsl/domain";
 
 export * from "./api-types";
 
@@ -52,8 +52,9 @@ export const api = {
   },
   templates: {
     list: () => apiFetch<CardTemplateRow[]>("/api/v1/card-templates"),
+    presets: () => apiFetch<Array<{ id: string; version: number; name: string; tags: string[]; layout: TemplateV2 }>>("/api/v1/card-template-presets"),
     get: (id: number) => apiFetch<CardTemplateRow>(`/api/v1/card-templates/${id}`),
-    create: (input: { name: string; layout: CardTemplate }) => apiFetch<CardTemplateRow>("/api/v1/card-templates", { method: "POST", body: JSON.stringify(input) }),
+    create: (input: { name: string; layout: CardTemplate | TemplateV2 }, idempotencyKey?: string) => apiFetch<CardTemplateRow>("/api/v1/card-templates", { method: "POST", headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined, body: JSON.stringify(input) }),
     patch: (id: number, patch: { name?: string; layout?: CardTemplate; version: number }, etag?: string) =>
       apiFetch<CardTemplateRow>(`/api/v1/card-templates/${id}`, {
         method: "PATCH",

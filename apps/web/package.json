@@ -6,6 +6,7 @@
   "scripts": { "build": "vite build", "typecheck": "tsc --noEmit" },
   "dependencies": {
     "@myqsl/adif-codec": "workspace:*",
+    "@myqsl/card-scene": "workspace:*",
     "@myqsl/card-renderer": "workspace:*",
     "@myqsl/domain": "workspace:*",
     "react": "19.1.1",

@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from "react";
-import { renderCard, type RenderInput } from "@myqsl/card-renderer";
+import { renderCard, renderSceneToCanvas, type RenderInput } from "@myqsl/card-renderer";
+import { compileCardScene, type FontRegistry } from "@myqsl/card-scene";
+import type { TemplateV2 } from "@myqsl/domain";
 
 export function CanvasPreview({
   template,
@@ -26,10 +28,29 @@ export function CanvasPreview({
         await document.fonts.ready;
       }
       if (!active || !ref.current) return;
-      const input: RenderInput = backgroundUrl
-        ? { layout: template as any, backgroundUrl }
-        : (template as any);
-      await renderCard(ref.current, input, qso);
+      if ((template as { schema_version?: number })?.schema_version === 2) {
+        const measureCanvas = document.createElement("canvas");
+        const measure = measureCanvas.getContext("2d");
+        if (!measure) throw new Error("Canvas 2D context is unavailable");
+        const fonts = new Map<string, { width: (text: string, sizePt: number) => number; ascent: (sizePt: number) => number; hasGlyph: (codePoint: number) => boolean }>();
+        for (const fontId of ["barlow-condensed-600", "ibm-plex-mono-400", "ibm-plex-mono-600", "noto-sans-sc-400"]) {
+          fonts.set(fontId, {
+            width: (text, sizePt) => {
+              measure.font = `${sizePt}px ${fontId.includes("mono") ? "monospace" : "sans-serif"}`;
+              return measure.measureText(text).width;
+            },
+            ascent: (sizePt) => sizePt * 0.8,
+            hasGlyph: () => true
+          });
+        }
+        const scene = compileCardScene(template as TemplateV2, { qso, publicUrl: "https://example.invalid/qsl-preview", proof: true }, fonts satisfies FontRegistry);
+        await renderSceneToCanvas(ref.current, scene, { images: new Map(), fontFamilies: new Map([["barlow-condensed-600", "Arial"], ["ibm-plex-mono-400", "monospace"], ["ibm-plex-mono-600", "monospace"], ["noto-sans-sc-400", "sans-serif"]]) });
+      } else {
+        const input: RenderInput = backgroundUrl
+          ? { layout: template as any, backgroundUrl }
+          : (template as any);
+        await renderCard(ref.current, input, qso);
+      }
     }
     void draw().catch((err) => {
       if (active) {
@@ -67,4 +88,3 @@ export function CanvasPreview({
     </div>
   );
 }
-
