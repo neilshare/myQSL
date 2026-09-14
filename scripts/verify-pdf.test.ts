@@ -7,4 +7,10 @@ describe("verify-pdf geometry contract", () => {
     expect(a4.page.width / (72 / 25.4)).toBeCloseTo(297, 3); expect(a4.slots).toHaveLength(4);
     expect(bleed.page.width / (72 / 25.4)).toBeCloseTo(146, 3); expect(bleed.slots[0].bleed / (72 / 25.4)).toBeCloseTo(3, 3);
   });
+
+  it("uses 300 DPI raster dimensions for trim and bleed", () => {
+    const px = (mm: number) => Math.round(mm / 25.4 * 300);
+    expect([px(140), px(90)]).toEqual([1654, 1063]);
+    expect([px(146), px(96)]).toEqual([1724, 1134]);
+  });
 });

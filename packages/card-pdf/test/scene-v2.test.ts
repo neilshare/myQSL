@@ -24,4 +24,18 @@ describe("V2 PDF scene adapter", () => {
     expect(page.getHeight()).toBeCloseTo((90 / 25.4) * 72, 4);
     expect(result.byteLength).toBeGreaterThan(500);
   });
+
+  it("writes the 146x96mm media box and 140x90mm trim box for print", async () => {
+    const result = await renderScenePdf(scene, { fonts: new Map([["test-font", { standard: StandardFonts.Helvetica }]]) }, { profile: "single-bleed-v2" });
+    const document = await PDFDocument.load(result);
+    const page = document.getPage(0);
+    const mm = (value: number) => value * 25.4 / 72;
+    expect(mm(page.getWidth())).toBeCloseTo(146, 3);
+    expect(mm(page.getHeight())).toBeCloseTo(96, 3);
+    const trim = page.getTrimBox();
+    expect(mm(trim.x)).toBeCloseTo(3, 3);
+    expect(mm(trim.y)).toBeCloseTo(3, 3);
+    expect(mm(trim.width)).toBeCloseTo(140, 3);
+    expect(mm(trim.height)).toBeCloseTo(90, 3);
+  });
 });

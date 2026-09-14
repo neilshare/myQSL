@@ -1,4 +1,6 @@
 import { PrintManifestSchema, type PrintManifestV1 } from "@myqsl/domain";
+export { preflightScene } from "@myqsl/card-scene";
+export type { SceneAssetMetadata, ScenePreflightProfile } from "@myqsl/card-scene";
 import { layoutForProfile } from "./layout";
 
 export type PrintAsset = { id: string; bytes: Uint8Array; mime: "image/png" | "image/jpeg"; width_px: number; height_px: number };
