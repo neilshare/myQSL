@@ -245,7 +245,7 @@ paths:
                 name:
                   type: string
                 layout:
-                  "$ref": "#/components/schemas/CardTemplate"
+                  "$ref": "#/components/schemas/CardTemplateAny"
               required:
                 - name
                 - layout
@@ -313,7 +313,7 @@ paths:
                 name:
                   type: string
                 layout:
-                  "$ref": "#/components/schemas/CardTemplate"
+                  "$ref": "#/components/schemas/CardTemplateAny"
                 version:
                   type: integer
       responses:
@@ -1292,6 +1292,347 @@ components:
         - base_width
         - base_height
         - elements
+    CardTextSource:
+      oneOf:
+        - type: object
+          properties:
+            kind:
+              type: string
+              const: literal
+            text:
+              type: string
+              maxLength: 500
+          required:
+            - kind
+            - text
+          additionalProperties: false
+        - type: object
+          properties:
+            kind:
+              type: string
+              const: qso
+            field:
+              type: string
+              enum:
+                - station_callsign
+                - call
+                - qso_date
+                - time_on
+                - band
+                - mode
+                - submode
+                - freq_mhz
+                - rst_sent
+                - rst_rcvd
+                - gridsquare
+                - name
+                - qth
+                - comment
+                - my_grid
+          required:
+            - kind
+            - field
+          additionalProperties: false
+    CardNodeV2:
+      oneOf:
+        - type: object
+          properties:
+            type:
+              type: string
+              const: text
+            id:
+              type: string
+            name:
+              type: string
+              maxLength: 80
+            x_mm:
+              type: number
+            y_mm:
+              type: number
+            width_mm:
+              type: number
+              exclusiveMinimum: 0
+            height_mm:
+              type: number
+              exclusiveMinimum: 0
+            locked:
+              type: boolean
+            visible:
+              type: boolean
+            group_id:
+              type: string
+            source:
+              "$ref": "#/components/schemas/CardTextSource"
+            font_id:
+              type: string
+            size_pt:
+              type: number
+              exclusiveMinimum: 0
+            min_size_pt:
+              type: number
+              exclusiveMinimum: 0
+            color:
+              type: string
+              pattern: "^#[0-9A-Fa-f]{6}$"
+            align:
+              type: string
+              enum:
+                - left
+                - center
+                - right
+            fit:
+              type: string
+              enum:
+                - shrink
+                - wrap
+            required:
+              type: boolean
+          required:
+            - type
+            - id
+            - name
+            - x_mm
+            - y_mm
+            - width_mm
+            - height_mm
+            - locked
+            - visible
+            - source
+            - font_id
+            - size_pt
+            - min_size_pt
+            - color
+            - align
+            - fit
+            - required
+          additionalProperties: false
+        - type: object
+          properties:
+            type:
+              type: string
+              const: rect
+            id:
+              type: string
+            name:
+              type: string
+              maxLength: 80
+            x_mm:
+              type: number
+            y_mm:
+              type: number
+            width_mm:
+              type: number
+              exclusiveMinimum: 0
+            height_mm:
+              type: number
+              exclusiveMinimum: 0
+            locked:
+              type: boolean
+            visible:
+              type: boolean
+            group_id:
+              type: string
+            fill:
+              type: string
+              pattern: "^#[0-9A-Fa-f]{6}$"
+          required:
+            - type
+            - id
+            - name
+            - x_mm
+            - y_mm
+            - width_mm
+            - height_mm
+            - locked
+            - visible
+            - fill
+          additionalProperties: false
+        - type: object
+          properties:
+            type:
+              type: string
+              const: image
+            id:
+              type: string
+            name:
+              type: string
+              maxLength: 80
+            x_mm:
+              type: number
+            y_mm:
+              type: number
+            width_mm:
+              type: number
+              exclusiveMinimum: 0
+            height_mm:
+              type: number
+              exclusiveMinimum: 0
+            locked:
+              type: boolean
+            visible:
+              type: boolean
+            group_id:
+              type: string
+            asset_id:
+              type: string
+            crop:
+              type: object
+              properties:
+                x:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+                y:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+                width:
+                  type: number
+                  exclusiveMinimum: 0
+                  maximum: 1
+                height:
+                  type: number
+                  exclusiveMinimum: 0
+                  maximum: 1
+              required:
+                - x
+                - y
+                - width
+                - height
+              additionalProperties: false
+          required:
+            - type
+            - id
+            - name
+            - x_mm
+            - y_mm
+            - width_mm
+            - height_mm
+            - locked
+            - visible
+            - asset_id
+            - crop
+          additionalProperties: false
+        - type: object
+          properties:
+            type:
+              type: string
+              const: qr
+            id:
+              type: string
+            name:
+              type: string
+              maxLength: 80
+            x_mm:
+              type: number
+            y_mm:
+              type: number
+            width_mm:
+              type: number
+              exclusiveMinimum: 0
+            height_mm:
+              type: number
+              exclusiveMinimum: 0
+            locked:
+              type: boolean
+            visible:
+              type: boolean
+            group_id:
+              type: string
+            source:
+              type: string
+              const: public_url
+            quiet_modules:
+              type: integer
+              const: 4
+          required:
+            - type
+            - id
+            - name
+            - x_mm
+            - y_mm
+            - width_mm
+            - height_mm
+            - locked
+            - visible
+            - source
+            - quiet_modules
+          additionalProperties: false
+    CardTemplateV2:
+      type: object
+      properties:
+        schema_version:
+          type: integer
+          const: 2
+        base_width:
+          type: integer
+          const: 1400
+        base_height:
+          type: integer
+          const: 900
+        trim:
+          type: object
+          properties:
+            width_mm:
+              type: number
+              const: 140
+            height_mm:
+              type: number
+              const: 90
+          required:
+            - width_mm
+            - height_mm
+          additionalProperties: false
+        bleed_mm:
+          type: number
+          const: 3
+        safe_mm:
+          type: number
+          const: 5
+        background:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+        font_manifest_version:
+          type: string
+          minLength: 1
+          maxLength: 120
+        preset:
+          oneOf:
+            - type: null
+            - type: object
+              properties:
+                id:
+                  type: string
+                version:
+                  type: integer
+                  minimum: 1
+              required:
+                - id
+                - version
+              additionalProperties: false
+        elements:
+          type: array
+          maxItems: 80
+          items:
+            "$ref": "#/components/schemas/CardNodeV2"
+      required:
+        - schema_version
+        - base_width
+        - base_height
+        - trim
+        - bleed_mm
+        - safe_mm
+        - background
+        - font_manifest_version
+        - preset
+        - elements
+      additionalProperties: false
+    CardTemplateAny:
+      oneOf:
+        - "$ref": "#/components/schemas/CardTemplate"
+        - "$ref": "#/components/schemas/CardTemplateV2"
+      discriminator:
+        propertyName: schema_version
     CardTemplateRow:
       type: object
       properties:

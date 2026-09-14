@@ -1,4 +1,5 @@
 export * from "./card";
+export * from "./card-v2";
 export * from "./cursor";
 export * from "./dedupe";
 export * from "./normalization";
