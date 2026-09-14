@@ -78,6 +78,9 @@ importers:
       '@myqsl/adif-codec':
         specifier: workspace:*
         version: link:../../packages/adif-codec
+      '@myqsl/card-presets':
+        specifier: workspace:*
+        version: link:../../packages/card-presets
       '@myqsl/card-renderer':
         specifier: workspace:*
         version: link:../../packages/card-renderer
@@ -87,6 +90,9 @@ importers:
       '@myqsl/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      konva:
+        specifier: 9.3.22
+        version: 9.3.22
       react:
         specifier: 19.1.1
         version: 19.1.1
@@ -2002,6 +2008,9 @@ packages:
   kleur@4.1.5:
     resolution: {integrity: sha512-o+NO+8WrRiQEE4/7nwRJhN1HWpVmJm511pBHUxPLtp0BUISzlBplORYSmTclCnJvQq2tKu/sgl3xVpkc7ZWuQQ==}
     engines: {node: '>=6'}
+
+  konva@9.3.22:
+    resolution: {integrity: sha512-yQI5d1bmELlD/fowuyfOp9ff+oamg26WOCkyqUyc+nczD/lhRa3EvD2MZOoc4c1293TAubW9n34fSQLgSeEgSw==}
 
   levn@0.4.1:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
@@ -4243,6 +4252,8 @@ snapshots:
   kleur@3.0.3: {}
 
   kleur@4.1.5: {}
+
+  konva@9.3.22: {}
 
   levn@0.4.1:
     dependencies:

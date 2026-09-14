@@ -44,6 +44,27 @@ export function registerCardRoutes(app: Hono<{ Bindings: Env; Variables: Request
     }
     return c.json({ data: card });
   });
+  app.get("/api/v1/cards/:id/frozen-background", async (c) => {
+    const card = await service(c).get(c.req.param("id"));
+    if (!card) return problem(404, "https://myqsl.app/problems/not-found", "Not found", "Card not found", c.req.path);
+    const snapshot = JSON.parse(card.template_snapshot_json) as { background_r2_key?: string | null };
+    if (!snapshot.background_r2_key) return problem(404, "https://myqsl.app/problems/not-found", "Not found", "Frozen background not found", c.req.path);
+    const object = await c.env.MEDIA.get(snapshot.background_r2_key);
+    if (!object) return problem(404, "https://myqsl.app/problems/not-found", "Not found", "Frozen background not found", c.req.path);
+    return new Response(object.body, { headers: { "Content-Type": object.httpMetadata?.contentType ?? "image/png", "Cache-Control": "private, no-cache", ETag: snapshot.background_r2_key } });
+  });
+  app.get("/api/v1/cards/:id/assets/:assetId", async (c) => {
+    const card = await service(c).get(c.req.param("id"));
+    if (!card) return problem(404, "https://myqsl.app/problems/not-found", "Not found", "Card not found", c.req.path);
+    const snapshot = JSON.parse(card.template_snapshot_json) as { asset_refs?: unknown };
+    const assetId = c.req.param("assetId");
+    if (!Array.isArray(snapshot.asset_refs) || !snapshot.asset_refs.includes(assetId)) return problem(404, "https://myqsl.app/problems/not-found", "Not found", "Asset is not part of this frozen card", c.req.path);
+    const asset = await new TemplateRepository(c.env.DB).getAsset(card.template_id, assetId);
+    if (!asset) return problem(404, "https://myqsl.app/problems/not-found", "Not found", "Card asset not found", c.req.path);
+    const object = await c.env.MEDIA.get(asset.r2_key);
+    if (!object) return problem(404, "https://myqsl.app/problems/not-found", "Not found", "Card asset not found", c.req.path);
+    return new Response(object.body, { headers: { "Content-Type": asset.mime, "Cache-Control": "private, no-cache", ETag: `"${asset.sha256}"` } });
+  });
   app.post("/api/v1/cards", async (c) => {
     try {
       const body = createCardSchema.parse(await c.req.json());

@@ -26,27 +26,15 @@ export class CardRepository {
     publicId: string;
     qsoSnapshot: string;
     templateSnapshot: string;
+    renderVersion?: string;
+    assetIds?: string[];
     lookupCall?: string | null;
     lookupQsoDate?: string | null;
     now: number;
   }): Promise<CardRow> {
-    await this.db
-      .prepare(
-        "INSERT INTO qsl_cards (id, qso_id, template_id, public_id, status, qso_snapshot_json, template_snapshot_json, render_version, lookup_call, lookup_qso_date, created_at, updated_at) VALUES (?, ?, ?, ?, 'draft', ?, ?, 'canvas-v1', ?, ?, ?, ?)"
-      )
-      .bind(
-        input.id,
-        input.qsoId,
-        input.templateId,
-        input.publicId,
-        input.qsoSnapshot,
-        input.templateSnapshot,
-        input.lookupCall ?? null,
-        input.lookupQsoDate ?? null,
-        input.now,
-        input.now
-      )
-      .run();
+    const statements: D1PreparedStatement[] = [this.db.prepare("INSERT INTO qsl_cards (id, qso_id, template_id, public_id, status, qso_snapshot_json, template_snapshot_json, render_version, lookup_call, lookup_qso_date, created_at, updated_at) VALUES (?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?)").bind(input.id, input.qsoId, input.templateId, input.publicId, input.qsoSnapshot, input.templateSnapshot, input.renderVersion ?? "canvas-v1", input.lookupCall ?? null, input.lookupQsoDate ?? null, input.now, input.now)];
+    for (const assetId of input.assetIds ?? []) statements.push(this.db.prepare("INSERT OR IGNORE INTO template_asset_refs(owner_kind,owner_id,asset_id,created_at) VALUES('card',?,?,?)").bind(input.id, assetId, input.now));
+    await this.db.batch(statements);
     return this.get(input.id) as Promise<CardRow>;
   }
   get(id: string): Promise<CardRow | null> {

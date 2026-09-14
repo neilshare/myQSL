@@ -1,8 +1,8 @@
 # myQSL 产品需求与技术规格（PRD）
 
-> **文档版本**：v1.2.0-implementation
-> **更新日期**：2026-09-11
-> **代码基线**：main / f21fe45
+> **文档版本**：v1.2.0-implementation + Template Studio V2
+> **更新日期**：2026-09-14
+> **代码基线**：main / 2026-09-14-template-studio
 > **生产域名**：<https://myqsl.203031.xyz>
 > **代码仓库**：<https://github.com/neilshare/myQSL>
 
@@ -15,6 +15,7 @@
 | v1.0 | QSO、ADIF、模板、电子卡、公开查验、备份 | 基线能力已存在 | 以生产配置为准 |
 | v1.1 | WSJT-X/N1MM 实时入库、A4 四拼矢量 PDF、Agent 管理 | 代码与本地测试完成；真机验收未完成 | FEATURE_AGENT_INGEST=0、FEATURE_PRINT=1 |
 | v1.2 | 单卡出血、批量制卡、QRZ 邮箱预览与 Resend 发卡 | 代码与本地测试完成；账号、回执、印刷和 E2E 验收未完成 | FEATURE_EMAIL_DELIVERY=0 |
+| Template Studio V2 | 140×90 mm 三预设、快速个性化、Konva 高级编辑、统一 CardScene、冻结快照 | 本地代码与测试完成；真实字体/二维码/纸张和 Playwright E2E 待验收 | FEATURE_TEMPLATE_STUDIO=0 |
 
 未完成的外部证据不得通过文案包装为“已生产发布”。发布阻塞项记录在 [第二阶段执行日志](docs/phase-2/execution-log.md)。
 

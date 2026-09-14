@@ -12,7 +12,9 @@ export const PrintManifestItemSchema = z.object({
   background_asset_id: z.string().min(1).max(160).nullable(),
   background_sha256: z.string().regex(/^[a-f0-9]{64}$/i).nullable(),
   public_url: z.string().url().nullable(),
-  qr_omitted: z.boolean().default(false)
+  qr_omitted: z.boolean().default(false),
+  template_schema_version: z.number().int().positive().optional(),
+  asset_refs: z.array(z.string().min(1).max(80)).max(80).optional()
 });
 export type PrintManifestItem = z.infer<typeof PrintManifestItemSchema>;
 

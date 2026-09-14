@@ -25,7 +25,7 @@ export class TemplateService {
       now: this.now()
     });
   }
-  async uploadBackground(templateId: number, body: ArrayBuffer, contentType: string): Promise<{ key: string; etag: string }> {
+  async uploadBackground(templateId: number, body: ArrayBuffer, contentType: string): Promise<{ key: string; etag: string; version: number }> {
     if (body.byteLength > 8 * 1024 * 1024) throw new Error("Background exceeds 8 MiB");
     const bytes = new Uint8Array(body);
     const isPng = bytes.slice(0, 8).every((byte, index) => byte === [137, 80, 78, 71, 13, 10, 26, 10][index]);
@@ -37,7 +37,7 @@ export class TemplateService {
     const result = await this.media.putImmutable(`templates/${templateId}/${hash}.${ext}`, body, contentType);
     const row = await this.repository.setBackground(templateId, result.key, hash, this.now());
     if (!row) throw new Error("Template not found");
-    return { key: result.key, etag: result.etag };
+    return { key: result.key, etag: result.etag, version: row.version };
   }
 
   async uploadAsset(templateId: number, body: ArrayBuffer, contentType: string) {

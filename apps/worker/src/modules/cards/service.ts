@@ -1,4 +1,4 @@
-import { CardTemplateSchema, publicCardPath } from "@myqsl/domain";
+import { AnyCardTemplateSchema, publicCardPath } from "@myqsl/domain";
 import { nanoid } from "nanoid";
 import { MediaStore } from "../../platform/r2";
 import { QsoRepository } from "../qsos/repository";
@@ -11,7 +11,9 @@ export class CardService {
   async createDraft(qsoId: number, templateId: number): Promise<CardRow & { public_url: string }> {
     const qso = await this.qsos.findById(qsoId); const template = await this.templates.get(templateId);
     if (!qso || !template) throw new Error("QSO or template not found");
-    const layout = CardTemplateSchema.parse(JSON.parse(template.layout_json));
+    const layout = AnyCardTemplateSchema.parse(JSON.parse(template.layout_json));
+    const assetIds = layout.schema_version === 2 ? [...new Set(layout.elements.filter((element) => element.type === "image").map((element) => element.asset_id))] : [];
+    if (assetIds.length && !(await this.templates.assetsBelongToTemplate(templateId, assetIds))) throw new CardStateError("Template references unavailable assets");
     const qsoSnapshot = {
       call: qso.call,
       station_callsign: qso.station_callsign,
@@ -30,7 +32,7 @@ export class CardService {
       comment: qso.comment,
       my_grid: qso.my_grid
     };
-    const templateSnapshot = { schema_version: 1, version: template.version, base_width: template.base_width, base_height: template.base_height, layout, background_r2_key: template.background_r2_key, background_sha256: template.background_sha256 };
+    const templateSnapshot = { schema_version: layout.schema_version, version: template.version, base_width: template.base_width, base_height: template.base_height, layout, background_r2_key: template.background_r2_key, background_sha256: template.background_sha256, asset_refs: assetIds, font_manifest_version: layout.schema_version === 2 ? layout.font_manifest_version : "fonts-v1" };
     const row = await this.repository.create({
       id: nanoid(16),
       qsoId,
@@ -40,7 +42,9 @@ export class CardService {
       templateSnapshot: JSON.stringify(templateSnapshot),
       lookupCall: qso.call.toUpperCase(),
       lookupQsoDate: qso.qso_date,
-      now: this.now()
+      now: this.now(),
+      renderVersion: layout.schema_version === 2 ? "canvas-v2" : "canvas-v1",
+      assetIds
     });
     return { ...row, public_url: publicCardPath(row.public_id) };
   }
@@ -50,8 +54,8 @@ export class CardService {
   async attachImage(cardId: string, bytes: ArrayBuffer, expectedHash?: string): Promise<CardRow> {
     const digest = await crypto.subtle.digest("SHA-256", bytes); const hash = [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
     if (expectedHash && expectedHash !== hash) throw new CardStateError("Content hash mismatch");
-    const result = await this.media.putImmutable(`cards/${cardId}/canvas-v1/${hash}.png`, bytes, "image/png");
     const current = await this.repository.get(cardId);
+    const result = await this.media.putImmutable(`cards/${cardId}/${current?.render_version ?? "canvas-v1"}/${hash}.png`, bytes, "image/png");
     if (current?.status === "ready" && current.content_sha256 === hash) return current;
     if (current?.status !== "draft") throw new CardStateError("Card is not in draft state");
     const row = await this.repository.attach(cardId, result.key, hash, this.now()); if (!row || row.status === "draft") throw new CardStateError("Card is not in draft state"); return row;

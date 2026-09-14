@@ -1,6 +1,9 @@
 import { PDFDocument, StandardFonts, rgb, type PDFPage, type PDFImage } from "pdf-lib";
 import QRCode from "qrcode";
 import type { PrintManifestV1 } from "@myqsl/domain";
+import type { CardScene, FontRegistry, ScenePrimitive } from "@myqsl/card-scene";
+import { CardTemplateV2Schema, type TemplateV2 } from "@myqsl/domain";
+import { compileCardScene } from "@myqsl/card-scene";
 import { layoutForProfile, toPdfY, MM_TO_PT } from "./layout";
 import { preflight, readSnapshot, type PreflightReport, type PrintAsset } from "./preflight";
 
@@ -36,6 +39,37 @@ function drawBackground(page: PDFPage, image: PDFImage, x: number, y: number, wi
   page.drawImage(image, { x, y, width, height });
 }
 
+function v2Fonts(): FontRegistry {
+  return new Map(["barlow-condensed-600", "ibm-plex-mono-400", "ibm-plex-mono-600", "noto-sans-sc-400"].map((id) => [id, { width: (value, sizePt) => value.length * sizePt * 0.55, ascent: (sizePt) => sizePt * 0.8, hasGlyph: () => true }]));
+}
+
+function drawSceneRect(page: PDFPage, primitive: Extract<ScenePrimitive, { type: "rect" }>, originX: number, originY: number): void {
+  page.drawRectangle({ x: originX + primitive.xMm * MM_TO_PT, y: originY - (primitive.yMm + primitive.heightMm) * MM_TO_PT, width: primitive.widthMm * MM_TO_PT, height: primitive.heightMm * MM_TO_PT, color: parseColor(primitive.fill) });
+}
+
+async function drawV2Scene(page: PDFPage, pdf: PDFDocument, scene: CardScene, assets: Map<string, PrintAsset>, originX: number, originYTop: number, images: Map<string, PDFImage>): Promise<void> {
+  const originY = page.getHeight() - originYTop * MM_TO_PT;
+  page.drawRectangle({ x: originX, y: originY - scene.heightMm * MM_TO_PT, width: scene.widthMm * MM_TO_PT, height: scene.heightMm * MM_TO_PT, color: parseColor(scene.background) });
+  const font = await pdf.embedFont(StandardFonts.Helvetica);
+  for (const primitive of scene.primitives) {
+    if (primitive.type === "rect") { drawSceneRect(page, primitive, originX, originY); continue; }
+    if (primitive.type === "text") {
+      page.drawText(primitive.text, { x: originX + primitive.xMm * MM_TO_PT, y: originY - primitive.baselineMm * MM_TO_PT, size: primitive.sizePt, font, color: parseColor(primitive.color), maxWidth: primitive.widthMm * MM_TO_PT });
+      continue;
+    }
+    const asset = assets.get(primitive.assetId);
+    if (!asset) throw new Error(`V2 print asset ${primitive.assetId} is unavailable`);
+    let image = images.get(primitive.assetId);
+    if (!image) {
+      image = asset.mime === "image/png" ? await pdf.embedPng(asset.bytes) : await pdf.embedJpg(asset.bytes);
+      images.set(primitive.assetId, image);
+    }
+    const x = originX + primitive.xMm * MM_TO_PT;
+    const y = originY - (primitive.yMm + primitive.heightMm) * MM_TO_PT;
+    page.drawImage(image, { x, y, width: primitive.widthMm * MM_TO_PT, height: primitive.heightMm * MM_TO_PT });
+  }
+}
+
 export async function renderPdf(manifest: PrintManifestV1, assets: Map<string, PrintAsset>, options: RenderOptions = {}): Promise<{ bytes: Uint8Array; report: PreflightReport }> {
   const report = preflight(manifest, assets, options.now);
   if (!report.ok) throw new PrintPreflightError(report);
@@ -69,6 +103,18 @@ export async function renderPdf(manifest: PrintManifestV1, assets: Map<string, P
         drawBackground(page, image, x, y, slot.width, slot.height);
       }
       const { qso, template } = readSnapshot(item.snapshot_json);
+      if ((template as { schema_version?: number }).schema_version === 2) {
+        const parsed = CardTemplateV2Schema.parse(template) as TemplateV2;
+        const scene = compileCardScene(parsed, { qso, publicUrl: item.public_url, proof: item.qr_omitted }, v2Fonts());
+        const sceneErrors = scene.issues.filter((issue) => issue.level === "error");
+        if (sceneErrors.length) throw new Error(`V2 scene blocked: ${sceneErrors.map((issue) => issue.code).join(", ")}`);
+        const originX = x + (manifest.profile === "single-bleed-v1" ? 3 * MM_TO_PT : 0);
+        const originTop = yTop + (manifest.profile === "single-bleed-v1" ? 3 : 0);
+        await drawV2Scene(page, pdf, scene, assets, originX, originTop, images);
+        completed += 1;
+        options.onProgress?.({ completed, total: manifest.items.length, page: pageIndex + 1 });
+        continue;
+      }
       const scaleX = slot.width / template.base_width;
       const scaleY = slot.height / template.base_height;
       for (const element of template.elements) {

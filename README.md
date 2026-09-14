@@ -34,6 +34,7 @@ myQSL 是面向业余无线电台主的单所有者 QSO 与 QSL 系统。它覆�
 | `RATE_LIMIT_SALT` | 已存在 | 已通过 Wrangler 读取远程 Secret 名称确认，内容不会回显 |
 | `/healthz` 公开探活 | 已通过 | 返回 `HTTP 200`，响应为 `{"status":"ok"}` |
 | `/readyz` 未认证访问 | 按预期拒绝 | 返回应用层 `HTTP 401`，需要 Cloudflare Access assertion |
+| QSL Template Studio V2 | 已实现本地代码与测试；生产写入默认关闭 | `FEATURE_TEMPLATE_STUDIO=0` |
 | Agent 实时入库 | 暂不开放 | `FEATURE_AGENT_INGEST=0` |
 | QRZ 邮件发卡 | 暂不开放 | `FEATURE_EMAIL_DELIVERY=0` |
 
@@ -57,6 +58,27 @@ Cloudflare 部署记录和公开探活均已通过，但不等同于业务验收
 - **v1.1**：实时 Agent 入库 + A4 四拼 PDF + 设备管理。
 - **v1.2**：单卡出血 + 批量制卡 + QRZ 邮箱预览/明确确认后发卡。
 - 不包含 CAT 控制、LoTW/QRZ Logbook 同步、地图和多操作员权限。
+
+### QSL Template Studio V2（当前实现）
+
+模板工作室采用 `TemplateV2 → CardScene → Canvas/PDF/Konva` 单一数据链路：模板 JSON 是可保存事实，CardScene 是绑定 QSO、字体测量、二维码展开后的渲染事实，Konva 只负责编辑交互。旧 V1 模板和渲染路径仍保留。
+
+- 三款内置预设：Classic DX、Photo Journal、Minimal Grid；点击“使用此预设”通过 `Idempotency-Key` 创建独立副本。
+- 快速模式：背景/强调色、照片 asset 上传、CW/FT8/中文预览、5 mm 安全区与图片 DPI/二维码/字体预检。
+- 高级模式：懒加载 Konva core，拖动只在 `dragEnd` 产生 mm 命令；禁止旋转/翻转，辅助线和 Stage JSON 不写入模板。
+- 保存：服务器版本号 + 412 冲突保护；本地草稿只保存模板文档、版本和时间，不保存 QSO、Token 或邮件地址。
+- 卡片/批量/打印：创建时冻结 V2 模板、QSO、字体 manifest 和 asset refs；后续修改原模板或 QSO 不会影响已冻结卡片。
+
+本地验证：
+
+~~~bash
+pnpm install
+pnpm generate:openapi && pnpm generate:api
+pnpm lint && pnpm typecheck && pnpm test
+pnpm build && pnpm check:bundle
+~~~
+
+生产先部署兼容读路径，确认迁移 `0008_template_studio.sql`、`0009_print_asset_refs.sql` 已应用后，再按验收结果将 `FEATURE_TEMPLATE_STUDIO` 从 `0` 调为 `1`。当前开关保持关闭；这不会阻断已存在 V2 模板的读取、制卡或打印。
 
 ## 架构与目录
 

@@ -35,6 +35,7 @@ export function registerTemplateRoutes(app: Hono<{ Bindings: Env; Variables: Req
         base_height: parsed.base_height,
         elements: parsed.elements
       };
+      if ((layout as { schema_version?: number }).schema_version === 2 && c.env.FEATURE_TEMPLATE_STUDIO === "0") return problem(404, "https://myqsl.app/problems/feature-disabled", "Feature disabled", "Template Studio V2 creation is disabled", c.req.path);
       repository = new TemplateRepository(c.env.DB);
       const service = new TemplateService(repository, new MediaStore(c.env.MEDIA));
       idempotencyKey = c.req.header("Idempotency-Key")?.trim() || null;
@@ -162,6 +163,7 @@ export function registerTemplateRoutes(app: Hono<{ Bindings: Env; Variables: Req
       let layoutJson = current.layout_json;
       if (body.layout !== undefined) {
         const parsed = AnyCardTemplateSchema.parse(body.layout);
+        if (parsed.schema_version === 2 && c.env.FEATURE_TEMPLATE_STUDIO === "0") return problem(404, "https://myqsl.app/problems/feature-disabled", "Feature disabled", "Template Studio V2 editing is disabled", c.req.path);
         layoutJson = JSON.stringify(parsed);
       } else if (body.elements !== undefined) {
         const parsed = CardTemplateSchema.parse({

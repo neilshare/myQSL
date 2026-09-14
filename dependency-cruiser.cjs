@@ -16,6 +16,7 @@ module.exports = {
     }
   ],
   options: {
+    exclude: "^apps/web/dist",
     doNotFollow: { path: "node_modules" },
     tsPreCompilationDeps: true,
     enhancedResolveOptions: { extensions: [".ts", ".tsx", ".mjs", ".js"] }

@@ -268,6 +268,28 @@ export const myqslOpenApiSpec = {
         }
       }
     },
+    "/api/v1/card-template-presets": {
+      get: {
+        summary: "List built-in V2 card template presets",
+        operationId: "listCardTemplatePresets",
+        responses: {
+          "200": {
+            description: "Versioned immutable presets",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    data: { type: "array", items: { $ref: "#/components/schemas/CardTemplatePreset" } }
+                  },
+                  required: ["data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/card-templates/{id}": {
       get: {
         summary: "Get Template by ID",
@@ -1133,6 +1155,18 @@ export const myqslOpenApiSpec = {
           { $ref: "#/components/schemas/CardTemplateV2" }
         ],
         discriminator: { propertyName: "schema_version" }
+      },
+      CardTemplatePreset: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          version: { type: "integer", minimum: 1 },
+          name: { type: "string" },
+          tags: { type: "array", items: { type: "string" } },
+          layout: { $ref: "#/components/schemas/CardTemplateV2" }
+        },
+        required: ["id", "version", "name", "tags", "layout"],
+        additionalProperties: false
       },
       CardTemplateRow: {
         type: "object",

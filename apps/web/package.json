@@ -3,12 +3,17 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "scripts": { "build": "vite build", "typecheck": "tsc --noEmit" },
+  "scripts": {
+    "build": "vite build",
+    "typecheck": "tsc --noEmit"
+  },
   "dependencies": {
     "@myqsl/adif-codec": "workspace:*",
-    "@myqsl/card-scene": "workspace:*",
+    "@myqsl/card-presets": "workspace:*",
     "@myqsl/card-renderer": "workspace:*",
+    "@myqsl/card-scene": "workspace:*",
     "@myqsl/domain": "workspace:*",
+    "konva": "9.3.22",
     "react": "19.1.1",
     "react-dom": "19.1.1",
     "react-router": "7.18.3"

@@ -1,7 +1,9 @@
 import { useEffect, useState, useRef } from "react";
 import { api, type QsoRecord, type CardTemplateRow, type CardRow } from "../../lib/api-client";
 import { renderCard } from "@myqsl/card-renderer";
-import type { CardTemplate } from "@myqsl/domain";
+import { renderSceneToCanvas } from "@myqsl/card-renderer";
+import { compileCardScene, type FontRegistry } from "@myqsl/card-scene";
+import type { CardTemplate, TemplateV2 } from "@myqsl/domain";
 import { useI18n } from "../../lib/i18n";
 
 export function CardCreatePage() {
@@ -55,30 +57,39 @@ export function CardCreatePage() {
       const qso = qsos.find((q) => q.id === selectedQsoId);
       const templateRow = templates.find((t) => t.id === selectedTemplateId);
       if (!qso || !templateRow) throw new Error(locale === "zh" ? "QSO 或模板不存在" : "QSO or template not found");
-
-      const layout = JSON.parse(templateRow.layout_json) as CardTemplate;
+      const frozenQso = card.qso_snapshot_json ? JSON.parse(card.qso_snapshot_json) as Record<string, unknown> : {
+        call: qso.call,
+        station_callsign: qso.station_callsign,
+        qso_date: qso.qso_date,
+        time_on: qso.time_on,
+        band: qso.band,
+        mode: qso.mode,
+        rst_sent: qso.rst_sent ?? undefined,
+        rst_rcvd: qso.rst_rcvd ?? undefined
+      };
+      const frozenTemplate = card.template_snapshot_json ? JSON.parse(card.template_snapshot_json) : { layout: JSON.parse(templateRow.layout_json), background_r2_key: templateRow.background_r2_key };
+      const layout = frozenTemplate.layout as CardTemplate | TemplateV2;
       const canvas = canvasRef.current ?? document.createElement("canvas");
-      canvas.width = layout.base_width || 1264;
-      canvas.height = layout.base_height || 848;
-
-      await renderCard(
-        canvas,
-        {
-          layout,
-          backgroundUrl: templateRow.background_r2_key ? `/api/v1/card-templates/${templateRow.id}/background` : undefined,
-        },
-        {
-          call: qso.call,
-          station_callsign: qso.station_callsign,
-          qso_date: qso.qso_date,
-          time_on: qso.time_on,
-          band: qso.band,
-          mode: qso.mode,
-          rst_sent: qso.rst_sent ?? undefined,
-          rst_rcvd: qso.rst_rcvd ?? undefined,
-        },
-        `${window.location.origin}/c/${card.public_id}`
-      );
+      canvas.width = layout.schema_version === 2 ? 1400 : layout.base_width || 1264;
+      canvas.height = layout.schema_version === 2 ? 900 : layout.base_height || 848;
+      const publicUrl = `${window.location.origin}/c/${card.public_id}`;
+      if (layout.schema_version === 2) {
+        const measure = document.createElement("canvas").getContext("2d");
+        if (!measure) throw new Error("Canvas 2D context is unavailable");
+        const fonts: FontRegistry = new Map(["barlow-condensed-600", "ibm-plex-mono-400", "ibm-plex-mono-600", "noto-sans-sc-400"].map((id) => [id, { width: (value, sizePt) => { measure.font = `${sizePt}px monospace`; return measure.measureText(value).width; }, ascent: (sizePt) => sizePt * 0.8, hasGlyph: () => true }]));
+        const images = new Map<string, { image: CanvasImageSource; width: number; height: number }>();
+        for (const node of layout.elements) {
+          if (node.type !== "image") continue;
+          const response = await fetch(`/api/v1/cards/${card.id}/assets/${encodeURIComponent(node.asset_id)}`, { credentials: "same-origin" });
+          if (!response.ok) throw new Error("Frozen card asset could not be loaded");
+          const bitmap = await createImageBitmap(await response.blob());
+          images.set(node.asset_id, { image: bitmap, width: bitmap.width, height: bitmap.height });
+        }
+        const scene = compileCardScene(layout, { qso: frozenQso, publicUrl, proof: false }, fonts);
+        await renderSceneToCanvas(canvas, scene, { images });
+      } else {
+        await renderCard(canvas, { layout, backgroundUrl: frozenTemplate.background_r2_key ? `/api/v1/cards/${card.id}/frozen-background` : undefined }, frozenQso, publicUrl);
+      }
 
       // 3. Export canvas blob
       const blob = await new Promise<Blob>((resolve, reject) => {

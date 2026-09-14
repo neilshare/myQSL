@@ -55,7 +55,7 @@ export const api = {
     presets: () => apiFetch<Array<{ id: string; version: number; name: string; tags: string[]; layout: TemplateV2 }>>("/api/v1/card-template-presets"),
     get: (id: number) => apiFetch<CardTemplateRow>(`/api/v1/card-templates/${id}`),
     create: (input: { name: string; layout: CardTemplate | TemplateV2 }, idempotencyKey?: string) => apiFetch<CardTemplateRow>("/api/v1/card-templates", { method: "POST", headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined, body: JSON.stringify(input) }),
-    patch: (id: number, patch: { name?: string; layout?: CardTemplate; version: number }, etag?: string) =>
+    patch: (id: number, patch: { name?: string; layout?: CardTemplate | TemplateV2; version: number }, etag?: string) =>
       apiFetch<CardTemplateRow>(`/api/v1/card-templates/${id}`, {
         method: "PATCH",
         headers: etag ? { "If-Match": etag } : { "If-Match": `"${patch.version}"` },
@@ -70,7 +70,13 @@ export const api = {
       });
       if (!response.ok) throw await ProblemError.fromResponse(response);
       const json = await response.json();
-      return (json && typeof json === "object" && "data" in json ? json.data : json) as { key: string; etag: string };
+      return (json && typeof json === "object" && "data" in json ? json.data : json) as { key: string; etag: string; version: number };
+    },
+    uploadAsset: async (id: number, file: Blob | ArrayBuffer, contentType = "image/png") => {
+      const response = await fetch(`/api/v1/card-templates/${id}/assets`, { method: "POST", headers: { "Content-Type": contentType, "X-MYQSL-Request": "1", "X-EQSR-Request": "1" }, credentials: "same-origin", body: file });
+      if (!response.ok) throw await ProblemError.fromResponse(response);
+      const json = await response.json();
+      return (json && typeof json === "object" && "data" in json ? json.data : json) as { asset_id: string; width: number; height: number; bytes: number; sha256: string; mime: "image/png" | "image/jpeg" };
     }
   },
   cards: {

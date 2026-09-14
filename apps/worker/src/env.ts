@@ -35,4 +35,5 @@ export interface Env {
   FEATURE_AGENT_INGEST?: string;
   FEATURE_PRINT?: string;
   FEATURE_EMAIL_DELIVERY?: string;
+  FEATURE_TEMPLATE_STUDIO?: string;
 }

@@ -41,7 +41,8 @@
     "ACCESS_AUD": "e3984f251d907ffba60f1d3c680cd21f8c9bebc0ccfe124f522a059b5bb2c197",
     "FEATURE_AGENT_INGEST": "0",
     "FEATURE_PRINT": "1",
-    "FEATURE_EMAIL_DELIVERY": "0"
+    "FEATURE_EMAIL_DELIVERY": "0",
+    "FEATURE_TEMPLATE_STUDIO": "0"
   },
   "triggers": {
     "crons": ["* * * * *", "0 20 * * *"]

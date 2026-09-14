@@ -1,9 +1,10 @@
-import { PrintManifestSchema, type PrintManifestV1 } from "@myqsl/domain";
+import { CardTemplateV2Schema, PrintManifestSchema, type PrintManifestV1 } from "@myqsl/domain";
+import { compileCardScene, preflightScene as preflightCompiledScene, type FontRegistry } from "@myqsl/card-scene";
 export { preflightScene } from "@myqsl/card-scene";
 export type { SceneAssetMetadata, ScenePreflightProfile } from "@myqsl/card-scene";
 import { layoutForProfile } from "./layout";
 
-export type PrintAsset = { id: string; bytes: Uint8Array; mime: "image/png" | "image/jpeg"; width_px: number; height_px: number };
+export type PrintAsset = { id: string; bytes: Uint8Array; mime: "image/png" | "image/jpeg"; width_px: number; height_px: number; sha256?: string };
 export type PreflightIssue = { code: string; severity: "error" | "warning"; position?: number; message: string };
 export type PreflightReport = { ok: boolean; errors: PreflightIssue[]; warnings: PreflightIssue[]; page_count: number; item_count: number; unique_backgrounds: number };
 
@@ -40,6 +41,22 @@ export function preflight(input: PrintManifestV1, assets: Map<string, PrintAsset
     }
     try {
       const { template, qso } = readSnapshot(item.snapshot_json);
+      if ((template as { schema_version?: number }).schema_version === 2) {
+        const parsed = CardTemplateV2Schema.safeParse(template);
+        if (!parsed.success) {
+          errors.push({ code: "PRINT_SNAPSHOT_INVALID", severity: "error", position: item.position, message: "V2 template snapshot failed schema validation" });
+          continue;
+        }
+        const fonts: FontRegistry = new Map(["barlow-condensed-600", "ibm-plex-mono-400", "ibm-plex-mono-600", "noto-sans-sc-400"].map((id) => [id, { width: (value, sizePt) => value.length * sizePt * 0.55, ascent: (sizePt) => sizePt * 0.8, hasGlyph: () => true }]));
+        const scene = compileCardScene(parsed.data, { qso, publicUrl: item.public_url, proof: item.qr_omitted }, fonts);
+        const metadata = new Map<string, { id: string; widthPx: number; heightPx: number; sha256?: string; expectedSha256?: string }>();
+        for (const assetId of item.asset_refs ?? []) { const asset = assets.get(assetId); if (asset) metadata.set(assetId, { id: asset.id, widthPx: asset.width_px, heightPx: asset.height_px, sha256: asset.sha256, expectedSha256: asset.sha256 }); }
+        for (const issue of preflightCompiledScene(scene, metadata, "single-bleed-v2")) {
+          const target = issue.level === "error" ? errors : warnings;
+          target.push({ code: issue.code, severity: issue.level === "error" ? "error" : "warning", position: item.position, message: issue.message });
+        }
+        continue;
+      }
       const ratio = template.base_width / template.base_height;
       const targetRatio = 140 / 90;
       if (Math.abs(ratio / targetRatio - 1) > 0.01) warnings.push({ code: "PRINT_PROFILE_MISMATCH", severity: "warning", position: item.position, message: "Template aspect ratio differs from the 140×90 mm print profile" });
