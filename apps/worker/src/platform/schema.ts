@@ -1,4 +1,4 @@
-import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
 export const stations = sqliteTable(
@@ -100,6 +100,32 @@ export const cardTemplates = sqliteTable("card_templates", {
   version: integer("version").notNull().default(1),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull()
+});
+
+export const templateAssets = sqliteTable("template_assets", {
+  id: text("id").primaryKey(),
+  templateId: integer("template_id").notNull().references(() => cardTemplates.id),
+  r2Key: text("r2_key").notNull().unique(),
+  sha256: text("sha256").notNull(),
+  mime: text("mime").notNull(),
+  width: integer("width").notNull(),
+  height: integer("height").notNull(),
+  byteSize: integer("byte_size").notNull(),
+  createdAt: integer("created_at").notNull()
+}, (table) => ({ templateHashIdx: uniqueIndex("uq_template_assets_template_sha256").on(table.templateId, table.sha256) }));
+
+export const templateAssetRefs = sqliteTable("template_asset_refs", {
+  ownerKind: text("owner_kind").notNull(),
+  ownerId: text("owner_id").notNull(),
+  assetId: text("asset_id").notNull().references(() => templateAssets.id),
+  createdAt: integer("created_at").notNull()
+}, (table) => ({ pk: primaryKey({ columns: [table.ownerKind, table.ownerId, table.assetId] }) }));
+
+export const templateCreateRequests = sqliteTable("template_create_requests", {
+  idempotencyKey: text("idempotency_key").primaryKey(),
+  requestHash: text("request_hash").notNull(),
+  templateId: integer("template_id").references(() => cardTemplates.id),
+  createdAt: integer("created_at").notNull()
 });
 
 export const qslCards = sqliteTable("qsl_cards", {

@@ -1,5 +1,6 @@
-import { CardTemplateSchema } from "@myqsl/domain";
+import { AnyCardTemplateSchema } from "@myqsl/domain";
 import { MediaStore } from "../../platform/r2";
+import { TemplateAssetService } from "./asset-service";
 import { TemplateRepository, type TemplateRow } from "./repository";
 
 const DEFAULT_CARD_LAYOUT = {
@@ -22,7 +23,7 @@ const DEFAULT_CARD_LAYOUT = {
 
 export class TemplateService {
   constructor(private readonly repository: TemplateRepository, private readonly media: MediaStore, private readonly now: () => number = Date.now) {}
-  async create(input: { name: string; layout: unknown }): Promise<TemplateRow> { const layout = CardTemplateSchema.parse(input.layout); return this.repository.create({ name: input.name.trim().slice(0, 120), layoutJson: JSON.stringify(layout), now: this.now() }); }
+  async create(input: { name: string; layout: unknown }): Promise<TemplateRow> { const layout = AnyCardTemplateSchema.parse(input.layout); return this.repository.create({ name: input.name.trim().slice(0, 120), layoutJson: JSON.stringify(layout), now: this.now() }); }
   async list(): Promise<TemplateRow[]> {
     const rows = await this.repository.list();
     if (rows.length === 0) {
@@ -44,7 +45,7 @@ export class TemplateService {
     if (!current) return null;
     let layoutJson = current.layout_json;
     if (input.layout !== undefined) {
-      const parsed = CardTemplateSchema.parse(input.layout);
+      const parsed = AnyCardTemplateSchema.parse(input.layout);
       layoutJson = JSON.stringify(parsed);
     }
     const name = input.name !== undefined ? input.name.trim().slice(0, 120) : current.name;
@@ -67,5 +68,18 @@ export class TemplateService {
     const row = await this.repository.setBackground(templateId, result.key, hash, this.now());
     if (!row) throw new Error("Template not found");
     return { key: result.key, etag: result.etag };
+  }
+
+  async uploadAsset(templateId: number, body: ArrayBuffer, contentType: string) {
+    return new TemplateAssetService(this.repository, this.media, this.now).upload(templateId, body, contentType);
+  }
+
+  extractAssetIds(layoutJson: string): string[] {
+    let parsed: unknown;
+    try { parsed = JSON.parse(layoutJson); } catch { return []; }
+    if (!parsed || typeof parsed !== "object" || (parsed as { schema_version?: unknown }).schema_version !== 2) return [];
+    const elements = (parsed as { elements?: unknown }).elements;
+    if (!Array.isArray(elements)) return [];
+    return [...new Set(elements.filter((element): element is { type: "image"; asset_id: string } => Boolean(element && typeof element === "object" && (element as { type?: unknown }).type === "image" && typeof (element as { asset_id?: unknown }).asset_id === "string")).map((element) => element.asset_id))];
   }
 }

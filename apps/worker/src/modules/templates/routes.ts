@@ -1,6 +1,6 @@
 import type { Hono } from "hono";
 import { z } from "zod";
-import { CardTemplateSchema } from "@myqsl/domain";
+import { AnyCardTemplateSchema, CardTemplateSchema } from "@myqsl/domain";
 import type { Env } from "../../env";
 import { MediaStore } from "../../platform/r2";
 import { problem } from "../../platform/problem";
@@ -8,6 +8,7 @@ import { AuditWriter } from "../../platform/audit";
 import type { RequestVariables } from "../../platform/request-context";
 import { TemplateRepository } from "./repository";
 import { TemplateService } from "./service";
+import { sha256Hex } from "./asset-service";
 
 const idSchema = z.coerce.number().int().positive();
 const createTemplateSchema = z.object({
@@ -22,6 +23,8 @@ const createTemplateSchema = z.object({
 export function registerTemplateRoutes(app: Hono<{ Bindings: Env; Variables: RequestVariables }>): void {
   app.get("/api/v1/card-templates", async (c) => { const service = new TemplateService(new TemplateRepository(c.env.DB), new MediaStore(c.env.MEDIA)); return c.json({ data: await service.list() }); });
   app.post("/api/v1/card-templates", async (c) => {
+    let idempotencyKey: string | null = null;
+    let repository: TemplateRepository | null = null;
     try {
       const parsed = createTemplateSchema.parse(await c.req.json());
       const layout = parsed.layout ?? {
@@ -30,8 +33,26 @@ export function registerTemplateRoutes(app: Hono<{ Bindings: Env; Variables: Req
         base_height: parsed.base_height,
         elements: parsed.elements
       };
-      const service = new TemplateService(new TemplateRepository(c.env.DB), new MediaStore(c.env.MEDIA));
+      repository = new TemplateRepository(c.env.DB);
+      const service = new TemplateService(repository, new MediaStore(c.env.MEDIA));
+      idempotencyKey = c.req.header("Idempotency-Key")?.trim() || null;
+      if (idempotencyKey) {
+        if (idempotencyKey.length > 160) return problem(422, "https://myqsl.app/problems/validation", "Validation failed", "Idempotency-Key is too long", c.req.path);
+        const requestHash = await sha256Hex(new TextEncoder().encode(JSON.stringify({ name: parsed.name, layout })));
+        const reservation = await repository.reserveCreateRequest(idempotencyKey, requestHash, Date.now());
+        const existing = reservation.row;
+        if (existing.request_hash !== requestHash) return problem(409, "https://myqsl.app/problems/conflict", "Conflict", "Idempotency-Key was already used for a different request", c.req.path);
+        if (existing.template_id !== null) {
+          const replay = await repository.get(existing.template_id);
+          if (!replay) return problem(409, "https://myqsl.app/problems/conflict", "Conflict", "Idempotent template result is unavailable", c.req.path);
+          return c.json({ data: replay }, 201);
+        }
+        if (!reservation.inserted) {
+          return problem(409, "https://myqsl.app/problems/conflict", "Conflict", "Idempotent request is still in progress", c.req.path);
+        }
+      }
       const created = await service.create({ name: parsed.name, layout });
+      if (idempotencyKey) await repository.completeCreateRequest(idempotencyKey, created.id);
       const audit = new AuditWriter(c.env.DB);
       await audit.append({
         actor: c.get("actor") ?? "unknown",
@@ -44,6 +65,7 @@ export function registerTemplateRoutes(app: Hono<{ Bindings: Env; Variables: Req
       });
       return c.json({ data: created }, 201);
     } catch (error) {
+      if (idempotencyKey && repository) await repository.releaseCreateRequest(idempotencyKey);
       return problem(422, "https://myqsl.app/problems/validation", "Validation failed", error instanceof Error ? error.message : "Invalid template", c.req.path);
     }
   });
@@ -67,9 +89,34 @@ export function registerTemplateRoutes(app: Hono<{ Bindings: Env; Variables: Req
       headers: {
         "Content-Type": object.httpMetadata?.contentType ?? "image/png",
         ETag: row.background_sha256 ? `"${row.background_sha256}"` : object.httpEtag,
-        "Cache-Control": "public, max-age=31536000, immutable"
+        "Cache-Control": "private, no-cache"
       }
     });
+  });
+  app.post("/api/v1/card-templates/:id/assets", async (c) => {
+    const id = idSchema.safeParse(c.req.param("id"));
+    if (!id.success) return problem(422, "https://myqsl.app/problems/validation", "Validation failed", "Invalid template id", c.req.path);
+    const repository = new TemplateRepository(c.env.DB);
+    const template = await repository.get(id.data);
+    if (!template) return problem(404, "https://myqsl.app/problems/not-found", "Not found", "Template not found", c.req.path);
+    try {
+      const body = await c.req.arrayBuffer();
+      const asset = await new TemplateService(repository, new MediaStore(c.env.MEDIA)).uploadAsset(id.data, body, c.req.header("Content-Type") ?? "application/octet-stream");
+      return c.json({ data: { asset_id: asset.id, template_id: asset.template_id, mime: asset.mime, width: asset.width, height: asset.height, bytes: asset.byte_size, sha256: asset.sha256 } }, 201);
+    } catch (error) {
+      return problem(422, "https://myqsl.app/problems/validation", "Validation failed", error instanceof Error ? error.message : "Invalid asset", c.req.path);
+    }
+  });
+  app.get("/api/v1/card-templates/:id/assets/:assetId", async (c) => {
+    const id = idSchema.safeParse(c.req.param("id"));
+    const assetId = c.req.param("assetId");
+    if (!id.success || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/u.test(assetId)) return problem(422, "https://myqsl.app/problems/validation", "Validation failed", "Invalid asset id", c.req.path);
+    const repository = new TemplateRepository(c.env.DB);
+    const asset = await repository.getAsset(id.data, assetId);
+    if (!asset) return problem(404, "https://myqsl.app/problems/not-found", "Not found", "Asset not found", c.req.path);
+    const object = await c.env.MEDIA.get(asset.r2_key);
+    if (!object) return problem(404, "https://myqsl.app/problems/not-found", "Not found", "Asset not found", c.req.path);
+    return new Response(object.body, { headers: { "Content-Type": asset.mime, ETag: `"${asset.sha256}"`, "Cache-Control": "private, no-cache" } });
   });
   app.patch("/api/v1/card-templates/:id", async (c) => {
     const id = idSchema.safeParse(c.req.param("id"));
@@ -112,7 +159,7 @@ export function registerTemplateRoutes(app: Hono<{ Bindings: Env; Variables: Req
     try {
       let layoutJson = current.layout_json;
       if (body.layout !== undefined) {
-        const parsed = CardTemplateSchema.parse(body.layout);
+        const parsed = AnyCardTemplateSchema.parse(body.layout);
         layoutJson = JSON.stringify(parsed);
       } else if (body.elements !== undefined) {
         const parsed = CardTemplateSchema.parse({
@@ -134,6 +181,10 @@ export function registerTemplateRoutes(app: Hono<{ Bindings: Env; Variables: Req
 
       const name = typeof body.name === "string" ? body.name.trim().slice(0, 120) : current.name;
       const now = Date.now();
+      const assetIds = service.extractAssetIds(layoutJson);
+      if (!(await templateRepo.assetsBelongToTemplate(id.data, assetIds))) {
+        return problem(422, "https://myqsl.app/problems/validation", "Validation failed", "Template references an asset owned by another template", c.req.path);
+      }
 
       const updateStmt = templateRepo.buildUpdateStatement(id.data, version, { name, layoutJson, now });
       const audit = new AuditWriter(c.env.DB);
@@ -147,7 +198,8 @@ export function registerTemplateRoutes(app: Hono<{ Bindings: Env; Variables: Req
         createdAt: now
       });
 
-      const batchResults = await c.env.DB.batch([updateStmt, auditStmt]);
+      const refStatements = [templateRepo.buildDeleteTemplateAssetRefs(id.data), ...assetIds.map((assetId) => templateRepo.buildInsertTemplateAssetRef(id.data, assetId, now))];
+      const batchResults = await c.env.DB.batch([updateStmt, ...refStatements, auditStmt]);
       if (batchResults[0].meta.changes === 0) {
         return problem(412, "https://myqsl.app/problems/precondition-failed", "Precondition Failed", "Concurrent template update conflict", c.req.path);
       }
